@@ -73,8 +73,12 @@ std::vector<std::pair<CRadians,Real>> CFootBotWall::getLocalMinReadings(char sec
       r = processed_readings[i+3].second;
       rr = processed_readings[i+4].second;
 
-      if(ll>l && l>c && c<r && r<rr)
+      if(ll>l && l>c && c<r && r<rr){
          local_min_readings.push_back(processed_readings[i+2]);
+         sectorLbl_to_sectorData[sector_lbl].local_min_readings.push_back(processed_readings[i+2]);
+         std::cout << ll-l << " " << l-c << " " << r-c << " " << rr-r << "\n";
+      }
+
    }
 
    return local_min_readings;
@@ -101,7 +105,7 @@ std::vector<std::pair<CRadians,Real>> CFootBotWall::processReadings(char sector_
       processed_readings.push_back(r);
 
    Real avg;
-   int window_len = 13;
+   int window_len = 5;
    int readings_len = sectorLbl_to_sectorData[sector_lbl].readings.size();
    int j = 0;
 
@@ -206,6 +210,7 @@ void CFootBotWall::ControlStep() {
    // reset sectors_data for the next control step
    for (const auto& [sectorLbl, sectorData] : sectorLbl_to_sectorData){
       sectorLbl_to_sectorData[sectorLbl].readings.clear();
+      sectorLbl_to_sectorData[sectorLbl].local_min_readings.clear();
       
    }
 

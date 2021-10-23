@@ -87,12 +87,9 @@ private:
       std::map<std::string, std::vector<std::string>> successors;
    } HalfTurn, ArcLeft, ArcRight, StraightOn, Braitenberg;
 
-   struct sector_data{
-      std::array<CRadians,2> angle_interval;
-      std::vector<std::pair<CRadians,Real>> readings;
-   } R, F, H;
 
-   std::map<char, struct sector_data> sectorLbl_to_sectorData;
+
+   
 
    CRadians chosen_direction;
    bool chosen = false;
@@ -114,6 +111,14 @@ private:
 
 
 public:
+
+   struct sector_data{
+      std::array<CRadians,2> angle_interval;
+      std::vector<std::pair<CRadians,Real>> readings;
+      std::vector<std::pair<CRadians,Real>> local_min_readings;
+   } R, F, H;
+
+   std::map<char, struct sector_data> sectorLbl_to_sectorData;
 
    /* Class constructor. */
    CFootBotWall();

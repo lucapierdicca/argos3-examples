@@ -115,6 +115,8 @@
 
   <visualization>
     <qt-opengl>
+      <user_functions library="build/loop_functions/wall_loop_functions/libwall_loop_functions"
+                      label="wall_qt_user_functions" />
       <camera>
         <placements>
           <placement index="0" position="0,0,17" look_at="0,1,0" up="0,1,0" lens_focal_length="65" />
