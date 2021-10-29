@@ -48,6 +48,8 @@ void CFootBotWall::Init(TConfigurationNode& t_node) {
                               {'F', F},
                               {'H', H}};
 
+   std::vector<std::pair<CRadians,Real>> local_min_readings;
+
 }
 
 
@@ -59,11 +61,13 @@ bool isClosed(Real distance){
 }
 
 
-std::vector<std::pair<CRadians,Real>> CFootBotWall::getLocalMinReadings(char sector_lbl){
+void CFootBotWall::getLocalMinReadings(char sector_lbl){
    
    std::vector<std::pair<CRadians,Real>> local_min_readings;
 
    auto processed_readings = processReadings(sector_lbl);
+
+   pr = processed_readings;
 
    for(int i = 0;i<processed_readings.size()-4;i++){
       Real ll, l ,c, r, rr; // sliding window |l|c|r|
@@ -74,14 +78,12 @@ std::vector<std::pair<CRadians,Real>> CFootBotWall::getLocalMinReadings(char sec
       rr = processed_readings[i+4].second;
 
       if(ll>l && l>c && c<r && r<rr){
-         local_min_readings.push_back(processed_readings[i+2]);
-         sectorLbl_to_sectorData[sector_lbl].local_min_readings.push_back(processed_readings[i+2]);
+         //local_min_readings.push_back(processed_readings[i+2]);
+         lmr.push_back(processed_readings[i+2]);
          std::cout << ll-l << " " << l-c << " " << r-c << " " << rr-r << "\n";
       }
 
    }
-
-   return local_min_readings;
 }
 
 std::pair<CRadians,Real> CFootBotWall::getMinReading(char sector_lbl){
@@ -105,7 +107,7 @@ std::vector<std::pair<CRadians,Real>> CFootBotWall::processReadings(char sector_
       processed_readings.push_back(r);
 
    Real avg;
-   int window_len = 5;
+   int window_len = 7;
    int readings_len = sectorLbl_to_sectorData[sector_lbl].readings.size();
    int j = 0;
 
@@ -117,7 +119,7 @@ std::vector<std::pair<CRadians,Real>> CFootBotWall::processReadings(char sector_
    
       avg = avg / window_len;
 
-      processed_readings[(i+j-1) % readings_len].second = avg;
+      processed_readings[(i+int((window_len-1)/2)) % readings_len].second = avg;
    }
 
    return processed_readings;
@@ -128,10 +130,17 @@ std::vector<std::pair<CRadians,Real>> CFootBotWall::processReadings(char sector_
 
 
 void CFootBotWall::ControlStep() {
+
+   // reset sectors_data for the next control step
+   for (const auto& [sectorLbl, sectorData] : sectorLbl_to_sectorData){
+      sectorLbl_to_sectorData[sectorLbl].readings.clear();
+   }
+
    
    
    // get the current step readings
    const CCI_FootBotDistanceScannerSensor::TReadingsMap& long_readings = m_pcDistanceS->GetLongReadingsMap();
+
    
    // add the current step readings in the map world_model_long (it starts empty then it grows then it stops)
    Real mod_distance;
@@ -141,6 +150,8 @@ void CFootBotWall::ControlStep() {
       if (mod_distance == -2) mod_distance = 150.0f;
       world_model_long[angle] = mod_distance;
    }
+
+   std::cout << world_model_long.size() << "\n";
 
    // add the readings to the opportune sector based on the sector angle_interval
    for (const auto& [angle, distance] : world_model_long){
@@ -152,15 +163,19 @@ void CFootBotWall::ControlStep() {
       }
    }
 
-   auto pr = processReadings('H');
-   // for(auto r : pr)
-   //    std::cout << r.first << " " << r.second << "\n";
-   
-   auto local_min_readings = getLocalMinReadings('H');
 
-   std::cout << "----------------------" << local_min_readings.size() <<" min readings\n";
-   for(auto lmr : local_min_readings)
-      std::cout << lmr.first << " " << lmr.second << "\n";
+   
+   if(counter == 10){
+      counter = 0;
+      lmr.clear();
+      pr.clear();
+      getLocalMinReadings('H');
+   }
+   counter++;
+
+   std::cout << "----------------------" << lmr.size() <<" min readings\n";
+   for(auto l : lmr)
+      std::cout << l.first << " " << l.second << "\n";
    
    std::cout << "*******************************\n";
    
@@ -171,8 +186,8 @@ void CFootBotWall::ControlStep() {
    Real distance_error, orientation_error;
    
    // default component
-   r_speed = 8.0;
-   l_speed = 8.0;
+   r_speed = 5.0;
+   l_speed = 5.0;
 
    // distance error component
    distance_error = r_distance_d - getMinReading('R').second;
@@ -193,13 +208,13 @@ void CFootBotWall::ControlStep() {
    if(orientation_error <= CRadians::PI.GetValue()){
       if(orientation_error > 0.0){
          //std::cout << "R: " << orie_error << std::endl;
-         r_speed += -5*abs(orientation_error);
-         l_speed += 5*abs(orientation_error);
+         r_speed += -2*abs(orientation_error);
+         l_speed += 2*abs(orientation_error);
       }
       else{
          //std::cout << "L: " << orie_error << std::endl;
-         r_speed += 5*abs(orientation_error);
-         l_speed += -5*abs(orientation_error);
+         r_speed += 2*abs(orientation_error);
+         l_speed += -2*abs(orientation_error);
       }
    }
    
@@ -207,12 +222,7 @@ void CFootBotWall::ControlStep() {
    m_pcWheels->SetLinearVelocity(l_speed, r_speed);
 
 
-   // reset sectors_data for the next control step
-   for (const auto& [sectorLbl, sectorData] : sectorLbl_to_sectorData){
-      sectorLbl_to_sectorData[sectorLbl].readings.clear();
-      sectorLbl_to_sectorData[sectorLbl].local_min_readings.clear();
-      
-   }
+
 
 
    /*

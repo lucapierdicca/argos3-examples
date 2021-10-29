@@ -34,7 +34,7 @@
         <footbot_proximity implementation="default" show_rays="false" />
       </sensors>
 
-      <params alpha="7.5" delta="0.1" velocity="5" />
+      <params alpha="7.5" delta="0.1" velocity="-5" />
     </footbot_wall_controller>
 
   </controllers>
@@ -80,7 +80,7 @@
     <!-- Robots -->
 
     <foot-bot id="fb_0">
-      <body position="0.3,-1,0" orientation="90,0,0" />
+      <body position="3.0,2.8,0" orientation="0,0,0" />
       <controller config="fwc"/>
     </foot-bot>
    
@@ -119,7 +119,7 @@
                       label="wall_qt_user_functions" />
       <camera>
         <placements>
-          <placement index="0" position="0,0,17" look_at="0,1,0" up="0,1,0" lens_focal_length="65" />
+          <placement index="0" position="0.0,0.0,16" look_at="0.0,1.0,0.0" up="0,1,0" lens_focal_length="65" />
         </placements>
       </camera>
     </qt-opengl>

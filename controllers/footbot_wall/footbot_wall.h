@@ -103,7 +103,7 @@ private:
    std::array<int,4> occupancy;
    std::map<std::array<int,4>, std::string> occupancy_to_zone;
 
-   int counter, counter_threshold;
+   int counter = 1, counter_threshold;
    Real desired_orientation;
    Real orientation_error;
    
@@ -112,10 +112,13 @@ private:
 
 public:
 
+   std::vector<std::pair<CRadians,Real>> lmr;
+   std::vector<std::pair<CRadians,Real>> pr;
+
    struct sector_data{
       std::array<CRadians,2> angle_interval;
       std::vector<std::pair<CRadians,Real>> readings;
-      std::vector<std::pair<CRadians,Real>> local_min_readings;
+
    } R, F, H;
 
    std::map<char, struct sector_data> sectorLbl_to_sectorData;
@@ -158,7 +161,7 @@ public:
    virtual void Destroy() {}
 
    std::pair<CRadians,Real> getMinReading(char sector_lbl);
-   std::vector<std::pair<CRadians,Real>> getLocalMinReadings(char sector_lbl);
+   void getLocalMinReadings(char sector_lbl);
    std::vector<std::pair<CRadians,Real>> processReadings(char sector_lbl);
 
 

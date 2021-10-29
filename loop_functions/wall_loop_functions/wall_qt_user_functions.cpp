@@ -11,6 +11,8 @@ CWALLQTUserFunctions::CWALLQTUserFunctions() {
 /****************************************/
 /****************************************/
 
+
+
 void CWALLQTUserFunctions::Draw(CFootBotEntity& c_entity) {
    /* The position of the text is expressed wrt the reference point of the footbot
     * For a foot-bot, the reference point is the center of its base.
@@ -19,14 +21,43 @@ void CWALLQTUserFunctions::Draw(CFootBotEntity& c_entity) {
     */
 
    
-   CFootBotWall& controller = dynamic_cast<CFootBotWall&> (c_entity.GetControllableEntity().GetController());
-
-   std::vector<std::pair<CRadians,Real>> local = controller.H.local_min_readings;
+   controller = dynamic_cast<CFootBotWall&> (c_entity.GetControllableEntity().GetController());
    
+   for (auto p : controller.pr){
+      CVector2 end = CVector2(p.second, p.first);
+      CRay3 ray = CRay3(CVector3(0.0, 0.0, 0.01) ,CVector3(end.GetX()*0.01, (end.GetY())*0.01, 0.01));
+      DrawRay(ray);
+   }
+   for (auto min : controller.lmr){
+      CVector2 end = CVector2(min.second, min.first);
+      CRay3 ray = CRay3(CVector3(0.0, 0.0, 0.02),CVector3(end.GetX()*0.01, end.GetY()*0.01, 0.02));
+      DrawRay(ray, CColor::BLACK, 2.0f);
+   }
+}
 
 
-   CRay3 ray = CRay3(CVector3(0.0, 0.0, 0.3),CVector3(0.5,0.5,0.3));
-   DrawRay(ray);
+void CWALLQTUserFunctions::DrawInWorld() {
+   Real x = 0.85;
+   Real y = 0.0;
+   Real dx = 0.03;
+   Real l;
+   bool in;
+   
+   for (auto p : controller.pr){
+      in = false;
+      CVector2 end = CVector2(p.second, p.first);
+      l = end.Length();
+      CRay3 ray = CRay3(CVector3(x, y, 0.01), CVector3(x, y+l*0.01, 0.01));
+      for(auto min : controller.lmr)
+         if(p == min)
+            in = true;
+      if (in)
+         DrawRay(ray, CColor::BLACK, 2.0f);
+      else
+         DrawRay(ray);
+      
+      x = x+dx;
+   }
 }
 
 /****************************************/

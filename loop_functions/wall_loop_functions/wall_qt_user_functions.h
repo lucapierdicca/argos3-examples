@@ -12,11 +12,15 @@ class CWALLQTUserFunctions : public CQTOpenGLUserFunctions {
 
 public:
 
+   CFootBotWall controller;
+
    CWALLQTUserFunctions();
 
    virtual ~CWALLQTUserFunctions() {}
 
    void Draw(CFootBotEntity& c_entity);
+
+   void DrawInWorld();
    
 };
 
