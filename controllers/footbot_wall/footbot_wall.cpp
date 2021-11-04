@@ -3,10 +3,9 @@
 /* Function definitions for XML parsing */
 #include <argos3/core/utility/configuration/argos_configuration.h>
 
+#include <algorithm>
 
 
-/****************************************/
-/****************************************/
 
 CFootBotWall::CFootBotWall() : // initializer list
    m_pcWheels(NULL),
@@ -17,8 +16,6 @@ CFootBotWall::CFootBotWall() : // initializer list
    m_fDelta(0.5f),
    m_fWheelVelocity(2.5f) {}
 
-/****************************************/
-/****************************************/
 
 void CFootBotWall::Init(TConfigurationNode& t_node) {
 
@@ -49,7 +46,6 @@ void CFootBotWall::Init(TConfigurationNode& t_node) {
                               {'H', H}};
 
    std::vector<std::pair<CRadians,Real>> local_min_readings;
-
 }
 
 
@@ -63,24 +59,30 @@ bool isClosed(Real distance){
 
 void CFootBotWall::getLocalMinReadings(char sector_lbl){
    
-   std::vector<std::pair<CRadians,Real>> local_min_readings;
+   std::vector<struct angle_data> local_min_readings;
 
-   auto processed_readings = processReadings(sector_lbl);
+   std::vector<struct angle_data> processed_readings = processReadings(sector_lbl);
 
    pr = processed_readings;
+   Real ll, l ,c, r, rr; // sliding window |l|c|r|
 
-   for(int i = 0;i<processed_readings.size()-4;i++){
-      Real ll, l ,c, r, rr; // sliding window |l|c|r|
-      ll = processed_readings[i].second;
-      l = processed_readings[i+1].second;
-      c = processed_readings[i+2].second;
-      r = processed_readings[i+3].second;
-      rr = processed_readings[i+4].second;
+   for(int i = 0;i<processed_readings.size();i++){
+      if (processed_readings[i].age == tic){
+         for (int j = 0;j<6;j++){
+            l = processed_readings[i-1].distance;
+            c = processed_readings[i].distance;
+            r = processed_readings[i+1].distance;
 
-      if(ll>l && l>c && c<r && r<rr){
-         //local_min_readings.push_back(processed_readings[i+2]);
-         lmr.push_back(processed_readings[i+2]);
-         std::cout << ll-l << " " << l-c << " " << r-c << " " << rr-r << "\n";
+            if(l>c && c<r){
+
+               lmr.push_back(processed_readings[i+1]);
+               std::cout <<  l-c << " " << r-c <<  "\n";
+               std::cout << processed_readings[i].age << " " 
+                         << processed_readings[i+1].age << " "
+                         << processed_readings[i+2].age << "\n";
+            }
+         }
+
       }
 
    }
@@ -91,23 +93,23 @@ std::pair<CRadians,Real> CFootBotWall::getMinReading(char sector_lbl){
    std::pair <CRadians, Real> min_reading (0,150);
    
    for(int i = 0;i< sectorLbl_to_sectorData[sector_lbl].readings.size();i++){
-      if(sectorLbl_to_sectorData[sector_lbl].readings[i].second < min_reading.second){
-         min_reading.second = sectorLbl_to_sectorData[sector_lbl].readings[i].second;;
-         min_reading.first = sectorLbl_to_sectorData[sector_lbl].readings[i].first;
+      if(sectorLbl_to_sectorData[sector_lbl].readings[i].distance < min_reading.second){
+         min_reading.second = sectorLbl_to_sectorData[sector_lbl].readings[i].distance;
+         min_reading.first = sectorLbl_to_sectorData[sector_lbl].readings[i].angle;
       }
    }
 
    return min_reading;
 }
 
-std::vector<std::pair<CRadians,Real>> CFootBotWall::processReadings(char sector_lbl){
+std::vector<CFootBotWall::angle_data> CFootBotWall::processReadings(char sector_lbl){
    
-   std::vector<std::pair<CRadians,Real>> processed_readings;
-   for (auto r : sectorLbl_to_sectorData[sector_lbl].readings)
-      processed_readings.push_back(r);
+   std::vector<struct angle_data> processed_readings;
+   for (auto angleData : sectorLbl_to_sectorData[sector_lbl].readings)
+      processed_readings.push_back(angleData);
 
    Real avg;
-   int window_len = 7;
+   int window_len = 5;
    int readings_len = sectorLbl_to_sectorData[sector_lbl].readings.size();
    int j = 0;
 
@@ -115,11 +117,11 @@ std::vector<std::pair<CRadians,Real>> CFootBotWall::processReadings(char sector_
       avg = 0.0f;
       j = 0;
       for(j;j<window_len;j++)
-         avg = avg + sectorLbl_to_sectorData[sector_lbl].readings[(i+j) % readings_len].second;
+         avg = avg + sectorLbl_to_sectorData[sector_lbl].readings[(i+j) % readings_len].distance;
    
       avg = avg / window_len;
 
-      processed_readings[(i+int((window_len-1)/2)) % readings_len].second = avg;
+      processed_readings[(i+int((window_len-1)/2)) % readings_len].distance = avg;
    }
 
    return processed_readings;
@@ -148,34 +150,35 @@ void CFootBotWall::ControlStep() {
       mod_distance = distance;
       if (mod_distance == -1) mod_distance = 15.0f;
       if (mod_distance == -2) mod_distance = 150.0f;
-      world_model_long[angle] = mod_distance;
+      angle_data a = {angle,mod_distance,tic};
+      world_model_long[angle] = a;
    }
 
    std::cout << world_model_long.size() << "\n";
 
    // add the readings to the opportune sector based on the sector angle_interval
-   for (const auto& [angle, distance] : world_model_long){
+   for (const auto& [angle, angleData] : world_model_long){
       for (const auto& [sectorLbl, sectorData] : sectorLbl_to_sectorData){
          if (angle >= sectorData.angle_interval[0] && angle <= sectorData.angle_interval[1]){
             //std::pair<CRadians,Real> p (angle, distance);
-            sectorLbl_to_sectorData[sectorLbl].readings.push_back({angle,distance});
+            sectorLbl_to_sectorData[sectorLbl].readings.push_back(angleData);
          }
       }
    }
 
 
    
-   if(counter == 10){
-      counter = 0;
-      lmr.clear();
-      pr.clear();
-      getLocalMinReadings('H');
-   }
+
+   counter = 0;
+   lmr.clear();
+   pr.clear();
+   getLocalMinReadings('H');
+
    counter++;
 
    std::cout << "----------------------" << lmr.size() <<" min readings\n";
    for(auto l : lmr)
-      std::cout << l.first << " " << l.second << "\n";
+      std::cout << l.angle << " " << l.distance << "\n";
    
    std::cout << "*******************************\n";
    
@@ -220,6 +223,8 @@ void CFootBotWall::ControlStep() {
    
 
    m_pcWheels->SetLinearVelocity(l_speed, r_speed);
+
+   tic++;
 
 
 

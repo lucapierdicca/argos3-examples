@@ -6,6 +6,7 @@
 #include "../../controllers/footbot_wall/footbot_wall.h"
 
 
+
 using namespace argos;
 
 class CWALLQTUserFunctions : public CQTOpenGLUserFunctions {

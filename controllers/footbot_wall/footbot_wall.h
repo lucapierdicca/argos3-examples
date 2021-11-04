@@ -57,8 +57,8 @@ private:
    CCI_FootBotDistanceScannerSensor* m_pcDistanceS;
    CCI_FootBotProximitySensor* m_pcProximity;
 
-   std::map<CRadians,Real> world_model_short;
-   std::map<CRadians,Real> world_model_long;
+
+
 
    /*
     * The following variables are used as parameters for the
@@ -81,29 +81,12 @@ private:
    Real m_fWheelVelocity;
 
    
-   struct state_data {
-      std::string behaviour;
-      std::array<float,3> input;
-      std::map<std::string, std::vector<std::string>> successors;
-   } HalfTurn, ArcLeft, ArcRight, StraightOn, Braitenberg;
-
-
-
-   
 
    CRadians chosen_direction;
    bool chosen = false;
 
 
-   
-
-   std::string primitive;
-   std::map<std::string, struct state_data> FSA;
-   
-   std::array<int,4> occupancy;
-   std::map<std::array<int,4>, std::string> occupancy_to_zone;
-
-   int counter = 1, counter_threshold;
+   int counter = 1, tic;
    Real desired_orientation;
    Real orientation_error;
    
@@ -112,16 +95,28 @@ private:
 
 public:
 
-   std::vector<std::pair<CRadians,Real>> lmr;
-   std::vector<std::pair<CRadians,Real>> pr;
+   struct angle_data{
+      CRadians angle;
+      Real distance;
+      int age;
+   };
+   std::map<CRadians, struct angle_data> world_model_short;
+   std::map<CRadians, struct angle_data> world_model_long;
+
+   std::vector<struct angle_data> lmr;
+   std::vector<struct angle_data> pr;
 
    struct sector_data{
       std::array<CRadians,2> angle_interval;
-      std::vector<std::pair<CRadians,Real>> readings;
+      std::vector<struct angle_data> readings;
 
    } R, F, H;
 
-   std::map<char, struct sector_data> sectorLbl_to_sectorData;
+   std::map<char,struct sector_data> sectorLbl_to_sectorData;
+
+   std::vector<struct angle_data> processReadings(char sector_lbl);
+   std::pair<CRadians,Real> getMinReading(char sector_lbl);
+   void getLocalMinReadings(char sector_lbl);
 
    /* Class constructor. */
    CFootBotWall();
@@ -160,9 +155,8 @@ public:
     */
    virtual void Destroy() {}
 
-   std::pair<CRadians,Real> getMinReading(char sector_lbl);
-   void getLocalMinReadings(char sector_lbl);
-   std::vector<std::pair<CRadians,Real>> processReadings(char sector_lbl);
+
+   
 
 
 
