@@ -32,6 +32,7 @@
 //sensors
 #include <argos3/plugins/robots/foot-bot/control_interface/ci_footbot_distance_scanner_sensor.h>
 #include <argos3/plugins/robots/foot-bot/control_interface/ci_footbot_proximity_sensor.h>
+#include <argos3/plugins/robots/generic/control_interface/ci_range_and_bearing_sensor.h>
 
 #include <experimental/random>
 
@@ -56,6 +57,7 @@ private:
    CCI_FootBotDistanceScannerActuator* m_pcDistanceA;
    CCI_FootBotDistanceScannerSensor* m_pcDistanceS;
    CCI_FootBotProximitySensor* m_pcProximity;
+   CCI_RangeAndBearingSensor* m_pcRangeAndBearingS;
 
 
 
@@ -86,7 +88,7 @@ private:
    bool chosen = false;
 
 
-   int counter = 1, tic;
+   int counter = 1, tic = 0;
    Real desired_orientation;
    Real orientation_error;
    
@@ -99,11 +101,15 @@ public:
       CRadians angle;
       Real distance;
       int age;
+
    };
    std::map<CRadians, struct angle_data> world_model_short;
    std::map<CRadians, struct angle_data> world_model_long;
 
-   std::vector<struct angle_data> lmr;
+   std::vector<struct angle_data> lmr_old_copy;
+   std::vector<struct angle_data> lmr_old;
+   std::vector<struct angle_data> lmr_new;
+   std::vector<struct angle_data> lMr; 
    std::vector<struct angle_data> pr;
 
    struct sector_data{
@@ -114,9 +120,9 @@ public:
 
    std::map<char,struct sector_data> sectorLbl_to_sectorData;
 
-   std::vector<struct angle_data> processReadings(char sector_lbl);
+   void processReadings(char sector_lbl);
    std::pair<CRadians,Real> getMinReading(char sector_lbl);
-   void getLocalMinReadings(char sector_lbl);
+   void getLocalMinReadings();
 
    /* Class constructor. */
    CFootBotWall();

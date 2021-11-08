@@ -23,12 +23,25 @@ void CWALLQTUserFunctions::Draw(CFootBotEntity& c_entity) {
       CVector2 end = CVector2(p.distance, p.angle);
       CRay3 ray = CRay3(CVector3(0.0, 0.0, 0.01) ,CVector3(end.GetX()*0.01, (end.GetY())*0.01, 0.01));
       DrawRay(ray);
-      DrawText(CVector3(end.GetX()*0.01, (end.GetY())*0.01, 0.01), std::to_string(p.age));
+      //DrawText(CVector3(end.GetX()*0.01, (end.GetY())*0.01, 0.01), std::to_string(p.distance));
    }
-   for (auto min : controller.lmr){
+
+   // for (auto mina : controller.lmr_old_copy){
+   //    CVector2 end = CVector2(mina.distance, mina.angle);
+   //    CRay3 ray = CRay3(CVector3(0.0, 0.0, 0.02),CVector3(end.GetX()*0.01, end.GetY()*0.01, 0.02));
+   //    DrawRay(ray, CColor::BLUE, 2.0f);
+   // }
+
+   for (auto min : controller.lmr_new){
       CVector2 end = CVector2(min.distance, min.angle);
       CRay3 ray = CRay3(CVector3(0.0, 0.0, 0.02),CVector3(end.GetX()*0.01, end.GetY()*0.01, 0.02));
       DrawRay(ray, CColor::BLACK, 2.0f);
+   }
+
+   for (auto max : controller.lMr){
+      CVector2 end = CVector2(max.distance, max.angle);
+      CRay3 ray = CRay3(CVector3(0.0, 0.0, 0.02),CVector3(end.GetX()*0.01, end.GetY()*0.01, 0.02));
+      DrawRay(ray, CColor::BLUE, 2.0f);
    }
 }
 
@@ -45,7 +58,7 @@ void CWALLQTUserFunctions::DrawInWorld() {
       CVector2 end = CVector2(p.distance, p.angle);
       l = end.Length();
       CRay3 ray = CRay3(CVector3(x, y, 0.01), CVector3(x, y+l*0.01, 0.01));
-      for(auto min : controller.lmr)
+      for(auto min : controller.lmr_new)
          if(p.angle == min.angle)
             in = true;
       if (in)
