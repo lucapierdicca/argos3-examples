@@ -84,10 +84,10 @@
       <controller config="fwc"/>
     </foot-bot>
 
-    <foot-bot id="fb_1">
-      <body position="1.5,2.4,0" orientation="0,0,0" />
+<!--     <foot-bot id="fb_1">
+      <body position="0.0,2.4,0" orientation="0,0,0" />
       <controller config="fwc"/>
-    </foot-bot>
+    </foot-bot> -->
    
     <!-- Obstacles -->
 

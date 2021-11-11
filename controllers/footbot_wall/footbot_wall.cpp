@@ -52,14 +52,14 @@ void CFootBotWall::Init(TConfigurationNode& t_node) {
 
 
 bool isOpen(Real distance){
-   if(distance == 150.0)
+   if(distance >= 140.0)
       return true;
    else
       return false;
 }
 
 
-void CFootBotWall::getLocalMinReadings(){
+void CFootBotWall::getLocalMinMaxReadings(){
    
    // find local mins
    Real l ,c, r, ll, rr, lll, rrr; // sliding window |l|c|r|
@@ -122,7 +122,6 @@ void CFootBotWall::getLocalMinReadings(){
          lMr.erase(lMr.begin());
          lMr.push_back(pr[int(start_index + (end_index+first_end_index-start_index)/2.0) % pr.size()]);
       }
-
 }
 
 
@@ -165,6 +164,40 @@ std::pair<CRadians,Real> CFootBotWall::getMinReading(char sector_lbl){
 }
 
 
+void CFootBotWall::getZoneLabel(){
+   int min_i = 0;
+   int max_i = 0;
+   std::vector<char> zone_label;
+
+
+   
+   if(lmr_new.size() > 0 and lMr.size() > 0){
+      for (int i = 0; i < lmr_new.size() + lMr.size(); i++){
+         if (min_i < lmr_new.size() and max_i < lMr.size()){
+            if(lmr_new[min_i].angle < lMr[max_i].angle){
+               zone_label.push_back('m');
+               min_i++;
+            }
+            else if(lmr_new[min_i].angle > lMr[max_i].angle){
+               zone_label.push_back('M');
+               max_i++;
+            }
+         }
+         else if(min_i == lmr_new.size()){
+            zone_label.push_back('M');
+            max_i++;
+         }
+         else{
+            zone_label.push_back('m');
+            min_i++;
+         }
+      }
+   }
+
+   for (auto c : zone_label)
+      std::cout << c;
+   std::cout << "\n";
+}
 
 
 
@@ -173,20 +206,13 @@ std::pair<CRadians,Real> CFootBotWall::getMinReading(char sector_lbl){
 void CFootBotWall::ControlStep() {
 
    // reset sectors_data for the next control step
-   for (const auto& [sectorLbl, sectorData] : sectorLbl_to_sectorData){
+   for (const auto& [sectorLbl, sectorData] : sectorLbl_to_sectorData)
       sectorLbl_to_sectorData[sectorLbl].readings.clear();
-   }
+   
 
-   
-   
    // get the current step readings
    const CCI_FootBotDistanceScannerSensor::TReadingsMap& long_readings = m_pcDistanceS->GetLongReadingsMap();
    const CCI_RangeAndBearingSensor::TReadings& rab_readings = m_pcRangeAndBearingS->GetReadings();
-
-   std::cout << "SIZE: " << rab_readings.size() << "\n";
-   for(auto a : rab_readings){
-      std::cout << a.HorizontalBearing << " " << a.VerticalBearing << "\n";
-   }
 
    
    // add the current step readings in the map world_model_long (it starts empty then it grows then it stops)
@@ -212,6 +238,7 @@ void CFootBotWall::ControlStep() {
    }
 
 
+
    
    if (counter == 10){
       counter=0;
@@ -219,24 +246,34 @@ void CFootBotWall::ControlStep() {
       lMr.clear();
       pr.clear();
       processReadings('H'); 
-      getLocalMinReadings();
-      
-      std::cout << "OLD: " << lmr_old.size() << "\n"; 
-      for(auto l : lmr_old)
-         std::cout << l.angle << " " << l.distance << " " << l.age << "\n";
+      getLocalMinMaxReadings();
 
-      std::cout << "NEW: " << lmr_new.size() << "\n";
+      std::cout << "ID: " << GetId() << "\n";
+
+      std::cout << "MIN: " << lmr_new.size() << "\n";
       for(auto l : lmr_new)
          std::cout << l.angle << " " << l.distance << " " << l.age << "\n";
+
+      std::cout << "MAX: " << lMr.size() << "\n";
+      for(auto l : lMr)
+         std::cout << l.angle << " " << l.distance << " " << l.age << "\n";
+
+      std::cout << "RAB: " << rab_readings.size() << "\n"; 
+      for(auto r : rab_readings)
+         std::cout << r.HorizontalBearing << " " << r.Range << "\n";
+
+      getZoneLabel();
       
       std::cout << "*******************************\n";
 
       lmr_old_copy = lmr_old;
 
       lmr_old = lmr_new;
-   }
-   counter++;
 
+      
+   }
+
+   counter++;
    tic++;
   
    

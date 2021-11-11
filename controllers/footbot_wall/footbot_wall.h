@@ -122,7 +122,8 @@ public:
 
    void processReadings(char sector_lbl);
    std::pair<CRadians,Real> getMinReading(char sector_lbl);
-   void getLocalMinReadings();
+   void getLocalMinMaxReadings();
+   void getZoneLabel();
 
    /* Class constructor. */
    CFootBotWall();
