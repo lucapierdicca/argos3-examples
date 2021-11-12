@@ -19,7 +19,8 @@ void CWALLQTUserFunctions::Draw(CFootBotEntity& c_entity) {
    
    controller = dynamic_cast<CFootBotWall&> (c_entity.GetControllableEntity().GetController());
 
-   if(controller.GetId() == "fb_1"){
+
+   if(controller.GetId() == "fb_0"){
    
       for (auto p : controller.pr){
          CVector2 end = CVector2(p.distance, p.angle);
@@ -71,6 +72,17 @@ void CWALLQTUserFunctions::DrawInWorld() {
          DrawRay(ray);
       
       x = x+dx;
+   }
+
+
+   for(auto z : controller.zone_trajectory){
+      if (z.label == "Mmmm" or z.label == "mmmM")
+         DrawPoint(z.robot_position, CColor::RED, 10.0);
+      else if (z.label == "MmMm" or z.label == "mMmM")
+         DrawPoint(z.robot_position, CColor::YELLOW, 10.0);
+      else if (z.label == "MmMmMm" or z.label == "mMmMmM")
+         DrawPoint(z.robot_position, CColor::GREEN, 10.0);
+
    }
 }
 

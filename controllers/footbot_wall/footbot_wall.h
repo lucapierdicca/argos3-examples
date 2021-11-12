@@ -33,6 +33,7 @@
 #include <argos3/plugins/robots/foot-bot/control_interface/ci_footbot_distance_scanner_sensor.h>
 #include <argos3/plugins/robots/foot-bot/control_interface/ci_footbot_proximity_sensor.h>
 #include <argos3/plugins/robots/generic/control_interface/ci_range_and_bearing_sensor.h>
+#include <argos3/plugins/robots/generic/control_interface/ci_positioning_sensor.h>
 
 #include <experimental/random>
 
@@ -58,6 +59,7 @@ private:
    CCI_FootBotDistanceScannerSensor* m_pcDistanceS;
    CCI_FootBotProximitySensor* m_pcProximity;
    CCI_RangeAndBearingSensor* m_pcRangeAndBearingS;
+   CCI_PositioningSensor* m_pcPositioning;
 
 
 
@@ -112,6 +114,12 @@ public:
    std::vector<struct angle_data> lMr; 
    std::vector<struct angle_data> pr;
 
+   struct zone_data{
+      CVector3 robot_position;
+      std::string label;
+   };
+   std::vector<struct zone_data> zone_trajectory;
+
    struct sector_data{
       std::array<CRadians,2> angle_interval;
       std::vector<struct angle_data> readings;
@@ -123,7 +131,7 @@ public:
    void processReadings(char sector_lbl);
    std::pair<CRadians,Real> getMinReading(char sector_lbl);
    void getLocalMinMaxReadings();
-   void getZoneLabel();
+   void getZoneLabel(CVector3 position);
 
    /* Class constructor. */
    CFootBotWall();

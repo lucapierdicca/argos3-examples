@@ -13,6 +13,7 @@ CFootBotWall::CFootBotWall() : // initializer list
    m_pcDistanceA(NULL),
    m_pcProximity(NULL),
    m_pcRangeAndBearingS(NULL),
+   m_pcPositioning(NULL),
    m_cAlpha(10.0f),
    m_fDelta(0.5f),
    m_fWheelVelocity(2.5f) {}
@@ -30,6 +31,7 @@ void CFootBotWall::Init(TConfigurationNode& t_node) {
    m_pcDistanceS  = GetSensor<CCI_FootBotDistanceScannerSensor>("footbot_distance_scanner");
    m_pcProximity  = GetSensor<CCI_FootBotProximitySensor>("footbot_proximity");
    m_pcRangeAndBearingS = GetSensor<CCI_RangeAndBearingSensor>("range_and_bearing");
+   m_pcPositioning = GetSensor<CCI_PositioningSensor>("positioning");
 
    
    //Parse the configuration file
@@ -164,39 +166,36 @@ std::pair<CRadians,Real> CFootBotWall::getMinReading(char sector_lbl){
 }
 
 
-void CFootBotWall::getZoneLabel(){
+void CFootBotWall::getZoneLabel(CVector3 position){
    int min_i = 0;
    int max_i = 0;
-   std::vector<char> zone_label;
-
-
    
+   zone_data current_zone = {position,""};
+
    if(lmr_new.size() > 0 and lMr.size() > 0){
       for (int i = 0; i < lmr_new.size() + lMr.size(); i++){
          if (min_i < lmr_new.size() and max_i < lMr.size()){
             if(lmr_new[min_i].angle < lMr[max_i].angle){
-               zone_label.push_back('m');
+               current_zone.label.append("m");
                min_i++;
             }
             else if(lmr_new[min_i].angle > lMr[max_i].angle){
-               zone_label.push_back('M');
+               current_zone.label.append("M");
                max_i++;
             }
          }
          else if(min_i == lmr_new.size()){
-            zone_label.push_back('M');
+            current_zone.label.append("M");
             max_i++;
          }
          else{
-            zone_label.push_back('m');
+            current_zone.label.append("m");
             min_i++;
          }
       }
    }
 
-   for (auto c : zone_label)
-      std::cout << c;
-   std::cout << "\n";
+   zone_trajectory.push_back(current_zone);
 }
 
 
@@ -213,6 +212,7 @@ void CFootBotWall::ControlStep() {
    // get the current step readings
    const CCI_FootBotDistanceScannerSensor::TReadingsMap& long_readings = m_pcDistanceS->GetLongReadingsMap();
    const CCI_RangeAndBearingSensor::TReadings& rab_readings = m_pcRangeAndBearingS->GetReadings();
+   const CCI_PositioningSensor::SReading& robot_state = m_pcPositioning->GetReading();
 
    
    // add the current step readings in the map world_model_long (it starts empty then it grows then it stops)
@@ -262,7 +262,8 @@ void CFootBotWall::ControlStep() {
       for(auto r : rab_readings)
          std::cout << r.HorizontalBearing << " " << r.Range << "\n";
 
-      getZoneLabel();
+
+      getZoneLabel(robot_state.Position);
       
       std::cout << "*******************************\n";
 
