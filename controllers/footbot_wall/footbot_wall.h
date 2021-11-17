@@ -103,8 +103,8 @@ public:
       CRadians angle;
       Real distance;
       int age;
-
    };
+
    std::map<CRadians, struct angle_data> world_model_short;
    std::map<CRadians, struct angle_data> world_model_long;
 
@@ -128,10 +128,15 @@ public:
 
    std::map<char,struct sector_data> sectorLbl_to_sectorData;
 
+   std::map<char,std::array<int,4>> classLbl_to_template;
+
    void processReadings(char sector_lbl);
    std::pair<CRadians,Real> getMinReading(char sector_lbl);
    void getLocalMinMaxReadings();
    void getZoneLabel(CVector3 position);
+   std::array<int,4> getFeatures();
+   Real EucDistance(std::array<int,4> u, std::array<int,4> v);
+   char classify(std::array<int,4> features);
 
    /* Class constructor. */
    CFootBotWall();

@@ -49,7 +49,20 @@ void CFootBotWall::Init(TConfigurationNode& t_node) {
                               {'F', F},
                               {'H', H}};
 
-   std::vector<std::pair<CRadians,Real>> local_min_readings;
+   classLbl_to_template = {{'V',{0,2,0,1}},
+                           {'C',{0,0,0,2}},
+                           {'G',{0,1,2,0}},
+                           {'I',{0,4,0,0}}};                   
+
+}
+
+Real CFootBotWall::EucDistance(std::array<int,4> u, std::array<int,4> v){
+   Real euc_distance = 0.0;
+
+   for(int i=0;i<u.size();i++)
+      euc_distance = euc_distance + Square(u[i] - v[i]);
+   
+   return Sqrt(euc_distance);
 }
 
 
@@ -199,6 +212,77 @@ void CFootBotWall::getZoneLabel(CVector3 position){
 }
 
 
+std::array<int,4> CFootBotWall::getFeatures(){
+   int n_feature_interval = 8;
+   CRadians aperture;
+   aperture.FromValueInDegrees(360.0/n_feature_interval);
+   CRadians start = -CRadians::PI + aperture/2;
+   std::map<int,int> intervalID_to_nMin;
+   std::vector<int> intervalID;
+   std::array<int,4> feature = {0,0,0,0};
+   bool placed;
+   int d = 0;
+   
+
+
+   for(auto lm : lmr_new){
+      placed = false;
+      for(int i=0;i<n_feature_interval-1;i++){
+         if(lm.angle > start + i*aperture && lm.angle <= start + (i+1)*aperture){
+               intervalID_to_nMin[i] = 1;
+               placed = true;
+         }
+      }
+
+      if(!placed)
+         intervalID_to_nMin[n_feature_interval-1] = 1;
+
+   }
+
+   for (const auto& [k,v] : intervalID_to_nMin){
+      intervalID.push_back(k);
+      std::cout << k;
+   }
+   std::cout << "\n";
+
+   for(int i=0;i<intervalID.size()-1;i++){
+      d = abs(intervalID[i+1] - intervalID[i]); //distanza in intervalli
+      if(d > n_feature_interval/2)
+         d = n_feature_interval - d;
+
+      feature[d-1]++;
+
+   }
+
+   //handling the last - first elements
+   d = abs(intervalID[intervalID.size()-1] - intervalID[0]);
+   if(d > n_feature_interval/2)
+      d = n_feature_interval - d;
+
+   feature[d-1]++;
+
+
+   return feature;
+      
+}
+
+
+char CFootBotWall::classify(std::array<int,4> feature){
+   char classLbl = ' ';
+   Real euc_distance = 0.0;
+   Real min_euc_distace = 1000.0;
+
+   for(const auto& [k,v] : classLbl_to_template){
+      euc_distance = EucDistance(feature, v);
+      if(euc_distance <= min_euc_distace){
+         min_euc_distace = euc_distance;
+         classLbl = k;
+      }
+
+   }
+
+   return classLbl;
+}
 
 
 
@@ -247,6 +331,16 @@ void CFootBotWall::ControlStep() {
       pr.clear();
       processReadings('H'); 
       getLocalMinMaxReadings();
+      auto feature = getFeatures();
+
+      for(auto f:feature)
+         std::cout << f;
+      std::cout << "\n";
+
+      char classLbl = classify(feature);
+
+      std::cout << classLbl << "\n";
+
 
       std::cout << "ID: " << GetId() << "\n";
 
