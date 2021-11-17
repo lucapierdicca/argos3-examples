@@ -75,13 +75,15 @@ void CWALLQTUserFunctions::DrawInWorld() {
    }
 
 
-   for(auto z : controller.zone_trajectory){
-      if (z.label == "Mmmm" or z.label == "mmmM")
-         DrawPoint(z.robot_position, CColor::RED, 10.0);
-      else if (z.label == "MmMm" or z.label == "mMmM")
-         DrawPoint(z.robot_position, CColor::YELLOW, 10.0);
-      else if (z.label == "MmMmMm" or z.label == "mMmMmM")
-         DrawPoint(z.robot_position, CColor::GREEN, 10.0);
+   for(auto p : controller.position_data_map){
+      if (p.class_label == 'V')
+         DrawPoint(p.coordinates, CColor::RED, 10.0);
+      else if (p.class_label == 'C')
+         DrawPoint(p.coordinates, CColor::YELLOW, 10.0);
+      else if (p.class_label == 'G')
+         DrawPoint(p.coordinates, CColor::GREEN, 10.0);
+      else if (p.class_label == 'I')
+         DrawPoint(p.coordinates, CColor::BLUE, 10.0);
 
    }
 }

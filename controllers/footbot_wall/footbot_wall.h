@@ -113,12 +113,13 @@ public:
    std::vector<struct angle_data> lmr_new;
    std::vector<struct angle_data> lMr; 
    std::vector<struct angle_data> pr;
+ 
 
-   struct zone_data{
-      CVector3 robot_position;
-      std::string label;
+   struct robot_position_data{
+      CVector3 coordinates;
+      char class_label;
    };
-   std::vector<struct zone_data> zone_trajectory;
+   std::vector<struct robot_position_data> position_data_map;
 
    struct sector_data{
       std::array<CRadians,2> angle_interval;
@@ -133,7 +134,7 @@ public:
    void processReadings(char sector_lbl);
    std::pair<CRadians,Real> getMinReading(char sector_lbl);
    void getLocalMinMaxReadings();
-   void getZoneLabel(CVector3 position);
+   void storePositionData(CVector3 position, char class_lbl);
    std::array<int,4> getFeatures();
    Real EucDistance(std::array<int,4> u, std::array<int,4> v);
    char classify(std::array<int,4> features);

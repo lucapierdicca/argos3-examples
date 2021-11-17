@@ -179,11 +179,11 @@ std::pair<CRadians,Real> CFootBotWall::getMinReading(char sector_lbl){
 }
 
 
-void CFootBotWall::getZoneLabel(CVector3 position){
+void CFootBotWall::storePositionData(CVector3 position, char class_lbl){
+   
+   /*
    int min_i = 0;
    int max_i = 0;
-   
-   zone_data current_zone = {position,""};
 
    if(lmr_new.size() > 0 and lMr.size() > 0){
       for (int i = 0; i < lmr_new.size() + lMr.size(); i++){
@@ -206,9 +206,11 @@ void CFootBotWall::getZoneLabel(CVector3 position){
             min_i++;
          }
       }
-   }
+   }*/
 
-   zone_trajectory.push_back(current_zone);
+   robot_position_data p = {position, class_lbl};
+
+   position_data_map.push_back(p);
 }
 
 
@@ -268,7 +270,8 @@ std::array<int,4> CFootBotWall::getFeatures(){
 
 
 char CFootBotWall::classify(std::array<int,4> feature){
-   char classLbl = ' ';
+   
+   char class_label = ' ';
    Real euc_distance = 0.0;
    Real min_euc_distace = 1000.0;
 
@@ -276,12 +279,12 @@ char CFootBotWall::classify(std::array<int,4> feature){
       euc_distance = EucDistance(feature, v);
       if(euc_distance <= min_euc_distace){
          min_euc_distace = euc_distance;
-         classLbl = k;
+         class_label = k;
       }
 
    }
 
-   return classLbl;
+   return class_label;
 }
 
 
@@ -337,9 +340,8 @@ void CFootBotWall::ControlStep() {
          std::cout << f;
       std::cout << "\n";
 
-      char classLbl = classify(feature);
+      char class_label = classify(feature);
 
-      std::cout << classLbl << "\n";
 
 
       std::cout << "ID: " << GetId() << "\n";
@@ -357,7 +359,7 @@ void CFootBotWall::ControlStep() {
          std::cout << r.HorizontalBearing << " " << r.Range << "\n";
 
 
-      getZoneLabel(robot_state.Position);
+      storePositionData(robot_state.Position, class_label);
       
       std::cout << "*******************************\n";
 
