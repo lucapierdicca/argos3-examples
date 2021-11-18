@@ -179,7 +179,18 @@ std::pair<CRadians,Real> CFootBotWall::getMinReading(char sector_lbl){
 }
 
 
-void CFootBotWall::storePositionData(CVector3 position, char class_lbl){
+void CFootBotWall::storePositionData(CVector3 position, char predicted_class_lbl){
+
+   std::map<char, std::vector<std::array<CVector2,2>>> classLbl_to_BBox;
+   classLbl_to_BBox = {{ 'V', {{CVector2(-4.0,3.5),CVector2(-2.5,2.0)},
+                               {CVector2(2.5,3.5),CVector2(4.0,2.0)},
+                               {CVector2(-0.75,-0.5),CVector2(0.75,-2.0)}} },
+                       { 'C', {{CVector2(-2.5,3.5),CVector2(-0.75,2.0)},
+                               {CVector2(0.75,3.5),CVector2(2.5,2.0)},
+                               {CVector2(-0.75,2.0),CVector2(0.75,-0.5)}} },
+                       { 'G', {{CVector2(-0.75,3.5),CVector2(0.75,2.0)}}} };
+
+   char true_class_lbl = ' ';
    
    /*
    int min_i = 0;
@@ -208,13 +219,20 @@ void CFootBotWall::storePositionData(CVector3 position, char class_lbl){
       }
    }*/
 
-   robot_position_data p = {position, class_lbl};
 
-   position_data_map.push_back(p);
+   for (const auto& [k,v] : classLbl_to_BBox){
+      for (auto bb : v){
+         if (position.GetX() > bb[0].GetX() && position.GetX() < bb[1].GetX() && position.GetY() > bb[1].GetY() && position.GetY() < bb[0].GetY())
+            true_class_lbl = k;  
+      }
+   }
+
+   if(true_class_lbl != ' ')
+      position_data_map.push_back({position, predicted_class_lbl, true_class_lbl});
 }
 
 
-std::array<int,4> CFootBotWall::getFeatures(){
+std::array<int,4> CFootBotWall::extractFeatures(){
    int n_feature_interval = 8;
    CRadians aperture;
    aperture.FromValueInDegrees(360.0/n_feature_interval);
@@ -269,7 +287,7 @@ std::array<int,4> CFootBotWall::getFeatures(){
 }
 
 
-char CFootBotWall::classify(std::array<int,4> feature){
+char CFootBotWall::predict(std::array<int,4> feature){
    
    char class_label = ' ';
    Real euc_distance = 0.0;
@@ -291,10 +309,11 @@ char CFootBotWall::classify(std::array<int,4> feature){
 
 void CFootBotWall::ControlStep() {
 
-   // reset sectors_data for the next control step
-   for (const auto& [sectorLbl, sectorData] : sectorLbl_to_sectorData)
-      sectorLbl_to_sectorData[sectorLbl].readings.clear();
-   
+    // reset sectors_data for the next control step
+    for (const auto& [sectorLbl, sectorData] : sectorLbl_to_sectorData)
+        sectorLbl_to_sectorData[sectorLbl].readings.clear();
+    pr.clear();
+
 
    // get the current step readings
    const CCI_FootBotDistanceScannerSensor::TReadingsMap& long_readings = m_pcDistanceS->GetLongReadingsMap();
@@ -308,39 +327,31 @@ void CFootBotWall::ControlStep() {
       mod_distance = distance;
       if (mod_distance == -1) mod_distance = 15.0f;
       if (mod_distance == -2) mod_distance = 150.0f;
-      angle_data a = {angle,mod_distance,tic};
-      world_model_long[angle] = a;
-   }
 
+      world_model_long[angle] = {angle,mod_distance,tic};
+   }
 
 
    // add the readings to the opportune sector based on the sector angle_interval
    for (const auto& [angle, angleData] : world_model_long){
       for (const auto& [sectorLbl, sectorData] : sectorLbl_to_sectorData){
          if (angle >= sectorData.angle_interval[0] && angle <= sectorData.angle_interval[1]){
-            //std::pair<CRadians,Real> p (angle, distance);
             sectorLbl_to_sectorData[sectorLbl].readings.push_back(angleData);
          }
       }
    }
 
+   if(tic >= 10)
+      processReadings('H');
 
 
    
    if (counter == 10){
-      counter=0;
-      lmr_new.clear();
-      lMr.clear();
-      pr.clear();
-      processReadings('H'); 
+
       getLocalMinMaxReadings();
-      auto feature = getFeatures();
-
-      for(auto f:feature)
-         std::cout << f;
-      std::cout << "\n";
-
-      char class_label = classify(feature);
+      auto features = extractFeatures();
+      char predicted_class_label = predict(features);
+      storePositionData(robot_state.Position, predicted_class_label);
 
 
 
@@ -359,13 +370,16 @@ void CFootBotWall::ControlStep() {
          std::cout << r.HorizontalBearing << " " << r.Range << "\n";
 
 
-      storePositionData(robot_state.Position, class_label);
       
       std::cout << "*******************************\n";
 
-      lmr_old_copy = lmr_old;
+      //lmr_old_copy = lmr_old;
 
-      lmr_old = lmr_new;
+      //lmr_old = lmr_new;
+
+      counter = 0;
+      lmr_new.clear();
+      lMr.clear(); 
 
       
    }

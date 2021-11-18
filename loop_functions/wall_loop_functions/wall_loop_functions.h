@@ -1,0 +1,23 @@
+#ifndef WALL_LOOP_FUNCTIONS_H
+#define WALL_LOOP_FUNCTIONS_H
+
+#include <argos3/core/simulator/loop_functions.h>
+#include <argos3/plugins/robots/foot-bot/simulator/footbot_entity.h>
+#include "../../controllers/footbot_wall/footbot_wall.h"
+
+using namespace argos;
+
+class CWallLoopFunctions : public CLoopFunctions {
+   
+public:
+
+   CFootBotWall controller;
+
+   virtual ~CWallLoopFunctions() {}
+
+   virtual void PostStep();
+
+
+};
+
+#endif

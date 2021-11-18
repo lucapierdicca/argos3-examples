@@ -76,14 +76,16 @@ void CWALLQTUserFunctions::DrawInWorld() {
 
 
    for(auto p : controller.position_data_map){
-      if (p.class_label == 'V')
+      if (p.predicted_class_lbl == 'V')
          DrawPoint(p.coordinates, CColor::RED, 10.0);
-      else if (p.class_label == 'C')
+      else if (p.predicted_class_lbl == 'C')
          DrawPoint(p.coordinates, CColor::YELLOW, 10.0);
-      else if (p.class_label == 'G')
+      else if (p.predicted_class_lbl == 'G')
          DrawPoint(p.coordinates, CColor::GREEN, 10.0);
-      else if (p.class_label == 'I')
+      else if (p.predicted_class_lbl == 'I')
          DrawPoint(p.coordinates, CColor::BLUE, 10.0);
+
+      //DrawText(p.coordinates, std::to_string(p.true_class_lbl));
 
    }
 }

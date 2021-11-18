@@ -90,7 +90,6 @@ private:
    bool chosen = false;
 
 
-   int counter = 1, tic = 0;
    Real desired_orientation;
    Real orientation_error;
    
@@ -98,6 +97,8 @@ private:
 
 
 public:
+
+   int counter = 0, tic = 0;
 
    struct angle_data{
       CRadians angle;
@@ -117,7 +118,8 @@ public:
 
    struct robot_position_data{
       CVector3 coordinates;
-      char class_label;
+      char predicted_class_lbl;
+      char true_class_lbl;
    };
    std::vector<struct robot_position_data> position_data_map;
 
@@ -135,9 +137,9 @@ public:
    std::pair<CRadians,Real> getMinReading(char sector_lbl);
    void getLocalMinMaxReadings();
    void storePositionData(CVector3 position, char class_lbl);
-   std::array<int,4> getFeatures();
+   std::array<int,4> extractFeatures();
    Real EucDistance(std::array<int,4> u, std::array<int,4> v);
-   char classify(std::array<int,4> features);
+   char predict(std::array<int,4> features);
 
    /* Class constructor. */
    CFootBotWall();

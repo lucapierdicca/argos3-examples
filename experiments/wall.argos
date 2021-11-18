@@ -40,6 +40,11 @@
 
   </controllers>
 
+  <!-- ****************** -->
+  <!-- * Loop functions * -->
+  <!-- ****************** -->
+  <loop_functions library="build/loop_functions/wall_loop_functions/libwall_loop_functions"
+                  label="wall_loop_functions" />
 
 
   <!-- *********************** -->
@@ -81,7 +86,7 @@
     <!-- Robots -->
 
     <foot-bot id="fb_0">
-      <body position="2.5,2.4,0" orientation="0,0,0" />
+      <body position="0,0,0" orientation="0,0,0" />
       <controller config="fwc"/>
     </foot-bot>
 
