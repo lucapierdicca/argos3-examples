@@ -20,7 +20,6 @@ CFootBotWall::CFootBotWall() : // initializer list
 
 
 void CFootBotWall::Init(TConfigurationNode& t_node) {
-
    
    //Sensors & Actuators
    m_pcWheels     = GetActuator<CCI_DifferentialSteeringActuator>("differential_steering");
@@ -52,7 +51,9 @@ void CFootBotWall::Init(TConfigurationNode& t_node) {
    classLbl_to_template = {{'V',{0,2,0,1}},
                            {'C',{0,0,0,2}},
                            {'G',{0,1,2,0}},
-                           {'I',{0,4,0,0}}};                   
+                           {'I',{0,4,0,0}}};
+
+                   
 
 }
 
@@ -179,57 +180,6 @@ std::pair<CRadians,Real> CFootBotWall::getMinReading(char sector_lbl){
 }
 
 
-void CFootBotWall::storePositionData(CVector3 position, char predicted_class_lbl){
-
-   std::map<char, std::vector<std::array<CVector2,2>>> classLbl_to_BBox;
-   classLbl_to_BBox = {{ 'V', {{CVector2(-4.0,3.5),CVector2(-2.5,2.0)},
-                               {CVector2(2.5,3.5),CVector2(4.0,2.0)},
-                               {CVector2(-0.75,-0.5),CVector2(0.75,-2.0)}} },
-                       { 'C', {{CVector2(-2.5,3.5),CVector2(-0.75,2.0)},
-                               {CVector2(0.75,3.5),CVector2(2.5,2.0)},
-                               {CVector2(-0.75,2.0),CVector2(0.75,-0.5)}} },
-                       { 'G', {{CVector2(-0.75,3.5),CVector2(0.75,2.0)}}} };
-
-   char true_class_lbl = ' ';
-   
-   /*
-   int min_i = 0;
-   int max_i = 0;
-
-   if(lmr_new.size() > 0 and lMr.size() > 0){
-      for (int i = 0; i < lmr_new.size() + lMr.size(); i++){
-         if (min_i < lmr_new.size() and max_i < lMr.size()){
-            if(lmr_new[min_i].angle < lMr[max_i].angle){
-               current_zone.label.append("m");
-               min_i++;
-            }
-            else if(lmr_new[min_i].angle > lMr[max_i].angle){
-               current_zone.label.append("M");
-               max_i++;
-            }
-         }
-         else if(min_i == lmr_new.size()){
-            current_zone.label.append("M");
-            max_i++;
-         }
-         else{
-            current_zone.label.append("m");
-            min_i++;
-         }
-      }
-   }*/
-
-
-   for (const auto& [k,v] : classLbl_to_BBox){
-      for (auto bb : v){
-         if (position.GetX() > bb[0].GetX() && position.GetX() < bb[1].GetX() && position.GetY() > bb[1].GetY() && position.GetY() < bb[0].GetY())
-            true_class_lbl = k;  
-      }
-   }
-
-   if(true_class_lbl != ' ')
-      position_data_map.push_back({position, predicted_class_lbl, true_class_lbl});
-}
 
 
 std::array<int,4> CFootBotWall::extractFeatures(){
@@ -306,93 +256,7 @@ char CFootBotWall::predict(std::array<int,4> feature){
 }
 
 
-
-void CFootBotWall::ControlStep() {
-
-    // reset sectors_data for the next control step
-    for (const auto& [sectorLbl, sectorData] : sectorLbl_to_sectorData)
-        sectorLbl_to_sectorData[sectorLbl].readings.clear();
-    pr.clear();
-
-
-   // get the current step readings
-   const CCI_FootBotDistanceScannerSensor::TReadingsMap& long_readings = m_pcDistanceS->GetLongReadingsMap();
-   const CCI_RangeAndBearingSensor::TReadings& rab_readings = m_pcRangeAndBearingS->GetReadings();
-   const CCI_PositioningSensor::SReading& robot_state = m_pcPositioning->GetReading();
-
-   
-   // add the current step readings in the map world_model_long (it starts empty then it grows then it stops)
-   Real mod_distance;
-   for (const auto& [angle, distance] : long_readings){
-      mod_distance = distance;
-      if (mod_distance == -1) mod_distance = 15.0f;
-      if (mod_distance == -2) mod_distance = 150.0f;
-
-      world_model_long[angle] = {angle,mod_distance,tic};
-   }
-
-
-   // add the readings to the opportune sector based on the sector angle_interval
-   for (const auto& [angle, angleData] : world_model_long){
-      for (const auto& [sectorLbl, sectorData] : sectorLbl_to_sectorData){
-         if (angle >= sectorData.angle_interval[0] && angle <= sectorData.angle_interval[1]){
-            sectorLbl_to_sectorData[sectorLbl].readings.push_back(angleData);
-         }
-      }
-   }
-
-   if(tic >= 10)
-      processReadings('H');
-
-
-   
-   if (counter == 10){
-
-      getLocalMinMaxReadings();
-      auto features = extractFeatures();
-      char predicted_class_label = predict(features);
-      storePositionData(robot_state.Position, predicted_class_label);
-
-
-
-      std::cout << "ID: " << GetId() << "\n";
-
-      std::cout << "MIN: " << lmr_new.size() << "\n";
-      for(auto l : lmr_new)
-         std::cout << l.angle << " " << l.distance << " " << l.age << "\n";
-
-      std::cout << "MAX: " << lMr.size() << "\n";
-      for(auto l : lMr)
-         std::cout << l.angle << " " << l.distance << " " << l.age << "\n";
-
-      std::cout << "RAB: " << rab_readings.size() << "\n"; 
-      for(auto r : rab_readings)
-         std::cout << r.HorizontalBearing << " " << r.Range << "\n";
-
-
-      
-      std::cout << "*******************************\n";
-
-      //lmr_old_copy = lmr_old;
-
-      //lmr_old = lmr_new;
-
-      counter = 0;
-      lmr_new.clear();
-      lMr.clear(); 
-
-      
-   }
-
-   counter++;
-   tic++;
-  
-   
-
-
-
-   
-
+std::array<Real,2> CFootBotWall::WallFollowing(){
    Real v_l, v_r, v_l_def, v_r_def, v_l_dis, v_r_dis, v_l_ori, v_r_ori;
    Real r_distance_d = 35; // desired distance to the wall [cm]
    CRadians r_orientation_d = -CRadians::PI_OVER_TWO; // desired orientation wrt the wall [rad]
@@ -434,13 +298,123 @@ void CFootBotWall::ControlStep() {
    v_r = v_r_def + v_r_dis + v_r_ori;
    v_l = v_l_def + v_l_dis + v_l_ori;
 
+   return {v_l, v_r};
 
-   m_pcWheels->SetLinearVelocity(v_l, v_r);
+}
+
+
+void CFootBotWall::ControlStep() {
+
+   std::cout << "STEP" << "\n";
+
+   //pr.clear();
+   //lmr_new.clear();
+   //lMr.clear(); 
+
+
+   // get the current step readings
+   const CCI_FootBotDistanceScannerSensor::TReadingsMap& long_readings = m_pcDistanceS->GetLongReadingsMap();
+   const CCI_FootBotDistanceScannerSensor::TReadingsMap& short_readings = m_pcDistanceS->GetShortReadingsMap();
+   const CCI_RangeAndBearingSensor::TReadings& rab_readings = m_pcRangeAndBearingS->GetReadings();
+   const CCI_PositioningSensor::SReading& robot_state = m_pcPositioning->GetReading();
+
+   
+   // add the current step readings in the map world_model_long (it starts empty then it grows then it stops)
+   Real mod_distance;
+   for (const auto& [angle, distance] : long_readings){
+      mod_distance = distance;
+      if (mod_distance == -1) mod_distance = 20.0f;
+      if (mod_distance == -2) mod_distance = 150.0f;
+
+      world_model_long[angle] = {angle,mod_distance,tic};
+   }
+
+   for (const auto& [angle, distance] : short_readings){
+      mod_distance = distance;
+      if (mod_distance == -1) mod_distance = 4.0f;
+      if (mod_distance == -2) mod_distance = 30.0f;
+
+      world_model_short[angle] = {angle,mod_distance,tic};
+   }
+
+
+   // add the readings to the opportune sector based on the sector angle_interval
+   for (const auto& [angle, angleData] : world_model_long){
+      for (const auto& [sectorLbl, sectorData] : sectorLbl_to_sectorData){
+         if (angle >= sectorData.angle_interval[0] && angle <= sectorData.angle_interval[1]){
+            sectorLbl_to_sectorData[sectorLbl].readings.push_back(angleData);
+         }
+      }
+   }
+
+
+   //processReadings('H');
+
+
+   tic++;
+
+
+   // compute the inputs
+   auto input = WallFollowing();
+   
+   // set the inputs
+   m_pcWheels->SetLinearVelocity(input[0], input[1]);
+   
+   // reset sectors_data (for the next control step)
+   for (const auto& [sectorLbl, sectorData] : sectorLbl_to_sectorData)
+      sectorLbl_to_sectorData[sectorLbl].readings.clear();
+
+
+   // store step_data in step_data_dataset
+   CRadians x,y,theta;
+   robot_state.Orientation.ToEulerAngles(theta,y,x);
+
+   dataset_step_data.push_back({tic,
+                                robot_state.Position.GetX(),
+                                robot_state.Position.GetY(),
+                                theta.GetValue(),
+                                input[0],
+                                input[1],
+                                world_model_long,
+                                world_model_short});
+
+
+   //dump the dataset into a .csv
+   if(tic == 20){
+      
+      std::ofstream file;
+      file.open("dynamic_dataset.csv");
+      for(auto step : dataset_step_data){
+
+         if (step.world_model_long.size() == 120 && step.world_model_short.size() == 120){
+            std::string row = "";
+            row += std::to_string(step.clock)+"|";
+            row += std::to_string(step.x)+"|";
+            row += std::to_string(step.y)+"|";
+            row += std::to_string(step.theta)+"|";
+            row += std::to_string(step.v_left)+"|";
+            row += std::to_string(step.v_right)+"|";
+
+            for(const auto& [angle, angle_data] : world_model_long){
+               row += std::to_string(angle_data.angle.GetValue())+"|";
+               row += std::to_string(angle_data.distance)+"|";
+            }
+
+            for(const auto& [angle, angle_data] : world_model_short){
+               row += std::to_string(angle_data.angle.GetValue())+"|";
+               row += std::to_string(angle_data.distance)+"|";
+            }
+
+            row += "\n";
+
+            file << row;
+         }
+      }
+
+      file.close();
+   }
 
   
-
-
-
 
 
    /*

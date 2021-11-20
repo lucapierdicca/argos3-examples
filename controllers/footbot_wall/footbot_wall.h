@@ -16,6 +16,8 @@
  *    experiments/diffusion_10.argos
  */
 
+
+
 #ifndef FOOTBOT_WALL_H
 #define FOOTBOT_WALL_H
 
@@ -40,16 +42,24 @@
 /* 2D vector definition */
 #include <argos3/core/utility/math/vector2.h>
 
+#include <fstream>
+
+//#include <argos3/core/simulator/simulator.h>
+
 /*
  * All the ARGoS stuff in the 'argos' namespace.
  * With this statement, you save typing argos:: every time.
  */
 using namespace argos;
 
+
+
 /*
  * A controller is simply an implementation of the CCI_Controller class.
  */
 class CFootBotWall : public CCI_Controller {
+
+
 
 private:
 
@@ -98,7 +108,7 @@ private:
 
 public:
 
-   int counter = 0, tic = 0;
+   int tic = 0;
 
    struct angle_data{
       CRadians angle;
@@ -116,12 +126,18 @@ public:
    std::vector<struct angle_data> pr;
  
 
-   struct robot_position_data{
-      CVector3 coordinates;
-      char predicted_class_lbl;
-      char true_class_lbl;
+   struct step_data{
+      int clock;
+      Real x;
+      Real y;
+      Real theta;
+      Real v_right;
+      Real v_left;
+      std::map<CRadians, struct angle_data> world_model_short;
+      std::map<CRadians, struct angle_data> world_model_long;
    };
-   std::vector<struct robot_position_data> position_data_map;
+
+   std::vector<struct step_data> dataset_step_data;
 
    struct sector_data{
       std::array<CRadians,2> angle_interval;
@@ -136,10 +152,11 @@ public:
    void processReadings(char sector_lbl);
    std::pair<CRadians,Real> getMinReading(char sector_lbl);
    void getLocalMinMaxReadings();
-   void storePositionData(CVector3 position, char class_lbl);
+
    std::array<int,4> extractFeatures();
    Real EucDistance(std::array<int,4> u, std::array<int,4> v);
    char predict(std::array<int,4> features);
+   std::array<Real,2> WallFollowing();
 
    /* Class constructor. */
    CFootBotWall();

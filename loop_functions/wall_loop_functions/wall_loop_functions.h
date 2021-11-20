@@ -11,11 +11,13 @@ class CWallLoopFunctions : public CLoopFunctions {
    
 public:
 
-   CFootBotWall controller;
+   CFootBotEntity pcFB;
 
    virtual ~CWallLoopFunctions() {}
 
-   virtual void PostStep();
+   virtual void Init(TConfigurationNode& t_tree);
+
+   virtual void PreStep();
 
 
 };
