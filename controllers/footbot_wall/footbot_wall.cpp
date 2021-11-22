@@ -263,8 +263,8 @@ std::array<Real,2> CFootBotWall::WallFollowing(){
    Real distance_error, orientation_error;
    
    // default component
-   v_r_def = 6.0;
-   v_l_def = 6.0;
+   v_r_def = 2.0 + 5.0*(getMinReading('F').second - r_distance_d)/(150.0 - r_distance_d);
+   v_l_def = 2.0 + 5.0*(getMinReading('F').second - r_distance_d)/(150.0 - r_distance_d);
 
    // distance error component
    distance_error = r_distance_d - getMinReading('R').second;
@@ -298,6 +298,8 @@ std::array<Real,2> CFootBotWall::WallFollowing(){
    v_r = v_r_def + v_r_dis + v_r_ori;
    v_l = v_l_def + v_l_dis + v_l_ori;
 
+   //std::cout << v_l_def << " " << v_r_def << "\n";
+
    return {v_l, v_r};
 
 }
@@ -305,7 +307,7 @@ std::array<Real,2> CFootBotWall::WallFollowing(){
 
 void CFootBotWall::ControlStep() {
 
-   std::cout << "STEP" << "\n";
+   //std::cout << "STEP" << "\n";
 
    //pr.clear();
    //lmr_new.clear();
@@ -336,6 +338,10 @@ void CFootBotWall::ControlStep() {
 
       world_model_short[angle] = {angle,mod_distance,tic};
    }
+
+
+
+
 
 
    // add the readings to the opportune sector based on the sector angle_interval
@@ -380,7 +386,7 @@ void CFootBotWall::ControlStep() {
 
 
    //dump the dataset into a .csv
-   if(tic == 20){
+   if(tic == 10000){
       
       std::ofstream file;
       file.open("dynamic_dataset.csv");
@@ -400,9 +406,9 @@ void CFootBotWall::ControlStep() {
                row += std::to_string(angle_data.distance)+"|";
             }
 
-            for(const auto& [angle, angle_data] : world_model_short){
-               row += std::to_string(angle_data.angle.GetValue())+"|";
-               row += std::to_string(angle_data.distance)+"|";
+            for(const auto& [angle2, angle_data2] : world_model_short){
+               row += std::to_string(angle_data2.angle.GetValue())+"|";
+               row += std::to_string(angle_data2.distance)+"|";
             }
 
             row += "\n";

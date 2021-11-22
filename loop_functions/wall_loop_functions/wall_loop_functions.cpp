@@ -19,7 +19,7 @@ void CWallLoopFunctions::PreStep() {
 
     if (GetSpace().GetSimulationClock() % 10 == 0 && GetSpace().GetSimulationClock() != 0){
 
-        std::cout << "SPOSTA" << "\n";
+        //std::cout << "SPOSTA" << "\n";
 
         std::random_device rd;
         std::default_random_engine eng(rd());

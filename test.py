@@ -26,8 +26,8 @@ for row in reader:
 	step['v_left'] = float(row[4].replace(",","."))
 	step['v_right'] = float(row[5].replace(",","."))
 
-	step['world_model_long'] = {float(row[i].replace(",",".")):float(row[i+1].replace(",",".")) for i in range(6,6+120-1)}
-	step['world_model_short'] = {float(row[i].replace(",",".")):float(row[i+1].replace(",",".")) for i in range(6+120,6+120+120-1)}
+	step['world_model_long'] = {float(row[i].replace(",",".")):float(row[i+1].replace(",",".")) for i in range(6,120*2+6,2)}
+	step['world_model_short'] = {float(row[i].replace(",",".")):float(row[i+1].replace(",",".")) for i in range(120*2,120*2+120*2+6,2)}
 
 	dataset.append(step)
 
