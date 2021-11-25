@@ -340,10 +340,6 @@ void CFootBotWall::ControlStep() {
    }
 
 
-
-
-
-
    // add the readings to the opportune sector based on the sector angle_interval
    for (const auto& [angle, angleData] : world_model_long){
       for (const auto& [sectorLbl, sectorData] : sectorLbl_to_sectorData){
@@ -386,13 +382,13 @@ void CFootBotWall::ControlStep() {
 
 
    //dump the dataset into a .csv
-   if(tic == 10000){
+   if(tic == 12000){
       
       std::ofstream file;
       file.open("dynamic_dataset.csv");
       for(auto step : dataset_step_data){
 
-         if (step.world_model_long.size() == 120 && step.world_model_short.size() == 120){
+         if (step.long_readings.size() == 120 && step.short_readings.size() == 120){
             std::string row = "";
             row += std::to_string(step.clock)+"|";
             row += std::to_string(step.x)+"|";
@@ -401,14 +397,14 @@ void CFootBotWall::ControlStep() {
             row += std::to_string(step.v_left)+"|";
             row += std::to_string(step.v_right)+"|";
 
-            for(const auto& [angle, angle_data] : world_model_long){
+            for(const auto& [angle, angle_data] : step.long_readings){
                row += std::to_string(angle_data.angle.GetValue())+"|";
                row += std::to_string(angle_data.distance)+"|";
             }
 
-            for(const auto& [angle2, angle_data2] : world_model_short){
-               row += std::to_string(angle_data2.angle.GetValue())+"|";
-               row += std::to_string(angle_data2.distance)+"|";
+            for(const auto& [angle, angle_data] : step.short_readings){
+               row += std::to_string(angle_data.angle.GetValue())+"|";
+               row += std::to_string(angle_data.distance)+"|";
             }
 
             row += "\n";

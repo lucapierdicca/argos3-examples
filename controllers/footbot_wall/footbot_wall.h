@@ -133,8 +133,8 @@ public:
       Real theta;
       Real v_right;
       Real v_left;
-      std::map<CRadians, struct angle_data> world_model_short;
-      std::map<CRadians, struct angle_data> world_model_long;
+      std::map<CRadians, struct angle_data> long_readings;
+      std::map<CRadians, struct angle_data> short_readings;
    };
 
    std::vector<struct step_data> dataset_step_data;
