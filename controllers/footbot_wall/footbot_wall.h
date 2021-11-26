@@ -156,7 +156,7 @@ public:
    std::array<int,4> extractFeatures();
    Real EucDistance(std::array<int,4> u, std::array<int,4> v);
    char predict(std::array<int,4> features);
-   std::array<Real,2> WallFollowing();
+   std::array<Real,2> WallFollowing(Real r_distance_d);
 
    /* Class constructor. */
    CFootBotWall();

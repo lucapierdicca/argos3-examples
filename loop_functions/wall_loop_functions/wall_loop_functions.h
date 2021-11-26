@@ -17,7 +17,7 @@ public:
 
    virtual void Init(TConfigurationNode& t_tree);
 
-   virtual void PreStep();
+   virtual void PostStep();
 
 
 };

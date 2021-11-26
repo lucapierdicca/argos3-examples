@@ -78,42 +78,6 @@ def map_():
 
 	draw_shape(map_)
 
-def robot(state):
-
-	x = state[0]
-	y = state[1]
-	theta = state[2]
-
-	circle((x,y), 15)
-
-	with push_matrix():
-		translate(x,y,0)
-		rotate_z(theta)
-		
-		no_stroke()
-		stroke_weight(2)
-		fill(255)
-		circle((3,0), 5)
-
-def rays(state, measurement, local_min_angles):
-	
-	x = state[0]
-	y = state[1]
-	theta = state[2]
-
-	with push_matrix():
-		translate(x,y,0)
-		rotate_z(theta)
-
-		for a,d in measurement.items():
-			x_end = d*cos(a) * 0.01 * 50
-			y_end = d*sin(a) * 0.01 * 50
-			stroke_weight(1)
-			if a in local_min_angles:
-				stroke(0,0,255,255)
-			else:
-				stroke(255,0,0,255)
-			line(0.0, 0.0, x_end, y_end)
 
 def origin():
 	circle((0,0), 5)
@@ -220,13 +184,13 @@ def setup():
 
 
 def draw():
-	background(160)
+	background(80)
 	translate(250.0,600.0,0.0)
 	rotate_z(3.1415)
 	rotate_y(3.1415)
 
 	no_fill()
-	stroke(255)
+	stroke(0)
 	stroke_weight(4)
 	map_()
 
@@ -253,7 +217,7 @@ def draw():
 	for c,p in zip(x_pred, y_pred):
 		color = map_ground_truth[p]['color']
 		fill(color[0],color[1],color[2],color[3])
-		circle((c[0],c[1]),5)
+		circle((c[0],c[1]),4)
 
 
 if __name__ == '__main__':

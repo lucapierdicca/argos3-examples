@@ -256,9 +256,8 @@ char CFootBotWall::predict(std::array<int,4> feature){
 }
 
 
-std::array<Real,2> CFootBotWall::WallFollowing(){
+std::array<Real,2> CFootBotWall::WallFollowing(Real r_distance_d){
    Real v_l, v_r, v_l_def, v_r_def, v_l_dis, v_r_dis, v_l_ori, v_r_ori;
-   Real r_distance_d = 35; // desired distance to the wall [cm]
    CRadians r_orientation_d = -CRadians::PI_OVER_TWO; // desired orientation wrt the wall [rad]
    Real distance_error, orientation_error;
    
@@ -309,10 +308,12 @@ void CFootBotWall::ControlStep() {
 
    //std::cout << "STEP" << "\n";
 
-   //pr.clear();
-   //lmr_new.clear();
-   //lMr.clear(); 
+   // reset sectors_data (for the next control step)
+   for (const auto& [sectorLbl, sectorData] : sectorLbl_to_sectorData)
+      sectorLbl_to_sectorData[sectorLbl].readings.clear();
 
+   //pr.clear();
+   
 
    // get the current step readings
    const CCI_FootBotDistanceScannerSensor::TReadingsMap& long_readings = m_pcDistanceS->GetLongReadingsMap();
@@ -350,22 +351,39 @@ void CFootBotWall::ControlStep() {
    }
 
 
+
+
    //processReadings('H');
 
 
    tic++;
 
 
+
+   if(tic%10 == 0){
+      //std::cout << "STORE\n";
+      //std::cout << tic << "\n";
+      //std::cout << dataset_step_data.size() << "\n";
+      //std::cout << world_model_long.size() << "\n";
+      //lmr_new.clear();
+      //lMr.clear(); 
+      //getLocalMinMaxReadings();
+
+
+      //std::cout << "CANCELLA\n";
+      //world_model_long.clear();
+      //world_model_short.clear();
+   }
+
+   
+
+
    // compute the inputs
-   auto input = WallFollowing();
+   auto input = WallFollowing(55.0);
    
    // set the inputs
    m_pcWheels->SetLinearVelocity(input[0], input[1]);
    
-   // reset sectors_data (for the next control step)
-   for (const auto& [sectorLbl, sectorData] : sectorLbl_to_sectorData)
-      sectorLbl_to_sectorData[sectorLbl].readings.clear();
-
 
    // store step_data in step_data_dataset
    CRadians x,y,theta;
@@ -381,11 +399,14 @@ void CFootBotWall::ControlStep() {
                                 world_model_short});
 
 
+
    //dump the dataset into a .csv
-   if(tic == 12000){
+   if(tic%100 == 0){
+
+      std::cout << "DUMPED\n";
       
       std::ofstream file;
-      file.open("dynamic_dataset.csv");
+      file.open("dynamic_dataset.csv", std::ios_base::app);
       for(auto step : dataset_step_data){
 
          if (step.long_readings.size() == 120 && step.short_readings.size() == 120){
@@ -414,6 +435,8 @@ void CFootBotWall::ControlStep() {
       }
 
       file.close();
+
+      dataset_step_data.clear();
    }
 
   

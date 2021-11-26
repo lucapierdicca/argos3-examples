@@ -15,41 +15,41 @@ CWALLQTUserFunctions::CWALLQTUserFunctions() {
 
 void CWALLQTUserFunctions::Draw(CFootBotEntity& c_entity) {
 
-   // DrawText(CVector3(0.0, 0.0, 0.5), c_entity.GetId().c_str());
+   //DrawText(CVector3(0.0, 0.0, 0.5), c_entity.GetId().c_str());
    
-   // controller = dynamic_cast<CFootBotWall&> (c_entity.GetControllableEntity().GetController());
+   controller = dynamic_cast<CFootBotWall&> (c_entity.GetControllableEntity().GetController());
 
-   // std::cout << "DISEGNA" << "\n";
+   //std::cout << "DISEGNA" << "\n";
 
 
-   // if(controller.GetId() == "fb_0"){
+   if(controller.GetId() == "fb_0"){
    
-   //    for (auto p : controller.pr){
-   //       CVector2 end = CVector2(p.distance, p.angle);
-   //       CRay3 ray = CRay3(CVector3(0.0, 0.0, 0.01) ,CVector3(end.GetX()*0.01, (end.GetY())*0.01, 0.01));
-   //       DrawRay(ray);
-   //       //DrawText(CVector3(end.GetX()*0.01, (end.GetY())*0.01, 0.01), std::to_string(p.distance));
-   //    }
+      for (auto p : controller.pr){
+         CVector2 end = CVector2(p.distance, p.angle);
+         CRay3 ray = CRay3(CVector3(0.0, 0.0, 0.01) ,CVector3(end.GetX()*0.01, (end.GetY())*0.01, 0.01));
+         DrawRay(ray);
+         //DrawText(CVector3(end.GetX()*0.01, (end.GetY())*0.01, 0.01), std::to_string(p.distance));
+      }
 
-   //    // for (auto mina : controller.lmr_old_copy){
-   //    //    CVector2 end = CVector2(mina.distance, mina.angle);
-   //    //    CRay3 ray = CRay3(CVector3(0.0, 0.0, 0.02),CVector3(end.GetX()*0.01, end.GetY()*0.01, 0.02));
-   //    //    DrawRay(ray, CColor::BLUE, 2.0f);
-   //    // }
+      // for (auto mina : controller.lmr_old_copy){
+      //    CVector2 end = CVector2(mina.distance, mina.angle);
+      //    CRay3 ray = CRay3(CVector3(0.0, 0.0, 0.02),CVector3(end.GetX()*0.01, end.GetY()*0.01, 0.02));
+      //    DrawRay(ray, CColor::BLUE, 2.0f);
+      // }
 
-   //    for (auto min : controller.lmr_new){
-   //       CVector2 end = CVector2(min.distance, min.angle);
-   //       CRay3 ray = CRay3(CVector3(0.0, 0.0, 0.02),CVector3(end.GetX()*0.01, end.GetY()*0.01, 0.02));
-   //       DrawRay(ray, CColor::BLACK, 2.0f);
-   //    }
+      for (auto min : controller.lmr_new){
+         CVector2 end = CVector2(min.distance, min.angle);
+         CRay3 ray = CRay3(CVector3(0.0, 0.0, 0.02),CVector3(end.GetX()*0.01, end.GetY()*0.01, 0.02));
+         DrawRay(ray, CColor::BLACK, 2.0f);
+      }
 
-   //    for (auto max : controller.lMr){
-   //       CVector2 end = CVector2(max.distance, max.angle);
-   //       CRay3 ray = CRay3(CVector3(0.0, 0.0, 0.02),CVector3(end.GetX()*0.01, end.GetY()*0.01, 0.02));
-   //       DrawRay(ray, CColor::BLUE, 2.0f);
-   //    }
+      // for (auto max : controller.lMr){
+      //    CVector2 end = CVector2(max.distance, max.angle);
+      //    CRay3 ray = CRay3(CVector3(0.0, 0.0, 0.02),CVector3(end.GetX()*0.01, end.GetY()*0.01, 0.02));
+      //    DrawRay(ray, CColor::BLUE, 2.0f);
+      // }
 
-   // }
+   }
 
 
 }
