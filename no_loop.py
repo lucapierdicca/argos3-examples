@@ -94,10 +94,7 @@ def draw():
 
 
 
-
-
 if __name__ == '__main__':
-
 	
 	dyn_dataset = loadDataset()
 	print("Dataset: ", len(dyn_dataset))
@@ -107,10 +104,10 @@ if __name__ == '__main__':
 	y_pred,x_pred,y_true = [],[],[]
 	for step in dyn_dataset:
 		if step['clock']%10 == 0:
-			x = [step['x']*50, step['y']*50]
+			x = [step['x'], step['y']]
 			classlbl, _ = classifier.getClassTrue(x)
 			if not classlbl == -1: 
-				x_pred.append(x)
+				x_pred.append([x[0]*50, x[1]*50])
 				y_true.append(classlbl)
 				z = classifier.preProcess(step['world_model_long'],3)
 				_, feature = classifier.extractFeature(z)
@@ -134,10 +131,10 @@ if __name__ == '__main__':
 	y_pred,x_pred,y_true = [],[],[]
 	for step in dyn_dataset:
 		if step['clock']%10 == 0:
-			x = [step['x']*50, step['y']*50]
+			x = [step['x'], step['y']]
 			classlbl, _ = classifier.getClassTrue(x)
 			if classlbl != -1: 
-				x_pred.append(x)
+				x_pred.append([x[0]*50, x[1]*50])
 				y_true.append(classlbl)
 				z = classifier.preProcess(step['world_model_long'],3)
 				_, feature = classifier.extractFeature(z)

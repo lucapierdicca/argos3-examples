@@ -122,7 +122,7 @@ class Classifier:
 	def getClassTrue(self, robot_position):
 		for classlbl, data in self.map_ground_truth.items():
 			for bb in data['bb']:
-				if robot_position[0] > bb[0][0]*50 and robot_position[0] < bb[1][0]*50 and robot_position[1] > bb[1][1]*50 and robot_position[1] < bb[0][1]*50:
+				if robot_position[0] > bb[0][0] and robot_position[0] < bb[1][0] and robot_position[1] > bb[1][1] and robot_position[1] < bb[0][1]:
 					return classlbl, self.classlbl_to_id[classlbl]
 		return -1, -1
 
@@ -146,14 +146,14 @@ class Filter:
 
 	def estimateTransitionModel(self, dataset):
 
-		joint = np.ones((self.state_dim, self.state_dim))
+		joint = np.zeros((self.state_dim, self.state_dim))
 
-		for i in range(len(dataset)-1):
-			robot_position = [dataset[i]['x']*50, dataset[i]['y']*50]
+		for i in range(len(dataset)-10):
+			robot_position = [dataset[i]['x'], dataset[i]['y']]
 			_, classid = self.classifier.getClassTrue(robot_position)
 			xt_1 = classid
 
-			robot_position = [dataset[i+1]['x']*50, dataset[i+1]['y']*50]
+			robot_position = [dataset[i+10]['x'], dataset[i+10]['y']]
 			_, classid = self.classifier.getClassTrue(robot_position)
 			xt = classid
 
@@ -166,28 +166,26 @@ class Filter:
 		
 		joint_dict = {}
 
-		for step in dataset:
-			z = self.classifier.preProcess(step['world_model_long'],3)
-			_, feature = self.classifier.extractFeature(z)
-
-			if tuple(feature) not in joint_dict:
-				joint_dict[tuple(feature)] = [0.0]*self.state_dim
-
-			robot_position = [step['x']*50, step['y']*50]
+		for i in range(0,len(dataset),10):
+			robot_position = [dataset[i]['x'], dataset[i]['y']]
 			_, classid = self.classifier.getClassTrue(robot_position)
 			
 			if classid != -1:
+				z = self.classifier.preProcess(dataset[i]['world_model_long'],3)
+				_, feature = self.classifier.extractFeature(z)
+				if tuple(feature) not in joint_dict:
+					joint_dict[tuple(feature)] = [0.0]*self.state_dim
 				joint_dict[tuple(feature)][classid] += 1.0
 
-			self.feature_to_id = {feature:i for i,feature in enumerate(list(joint_dict.keys()))}
+		self.feature_to_id = {feature:i for i,feature in enumerate(list(joint_dict.keys()))}
 
-			joint = np.ones((len(joint_dict),self.state_dim))
+		joint = np.zeros((len(joint_dict),self.state_dim))
 
-			for feature,state_counts in joint_dict.items():
-				for i,counts in enumerate(state_counts):
-					joint[self.feature_to_id[feature], i] += counts
+		for feature,state_counts in joint_dict.items():
+			for i,counts in enumerate(state_counts):
+				joint[self.feature_to_id[feature], i] = counts
 
-			self.observation_model = joint/np.sum(joint, axis=0)
+		self.observation_model = joint/np.sum(joint, axis=0)
 
 
 	def transitionModel(self, xt, xt_1):
@@ -202,9 +200,6 @@ class Filter:
 		for i in range(self.state_dim):
 			for j in range(self.state_dim):
 				bt_t_1[j] += self.transition_model[j, i]*belief[i]
-
-
-
 
 		btt = [0.0]*self.state_dim
 		den = 0.0
