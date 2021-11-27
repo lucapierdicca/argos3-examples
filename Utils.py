@@ -201,15 +201,18 @@ class Filter:
 		bt_t_1 = [0.0]*self.state_dim
 		for i in range(self.state_dim):
 			for j in range(self.state_dim):
-				bt_t_1[i] += self.transition_model[j, i]*belief[i]
+				bt_t_1[j] += self.transition_model[j, i]*belief[i]
+
+
 
 
 		btt = [0.0]*self.state_dim
 		den = 0.0
 		for i in range(self.state_dim):
 			btt[i] = self.observation_model[self.feature_to_id[tuple(feature)],i]*bt_t_1[i]
+			den+=btt[i]
 
-		return btt
+		return [b/den for b in btt]
 
 	def predict(self, belief):
 		argmax = np.argmax(np.array(belief))

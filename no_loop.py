@@ -136,14 +136,16 @@ if __name__ == '__main__':
 		if step['clock']%10 == 0:
 			x = [step['x']*50, step['y']*50]
 			classlbl, _ = classifier.getClassTrue(x)
-			if not classlbl == -1: 
+			if classlbl != -1: 
 				x_pred.append(x)
 				y_true.append(classlbl)
 				z = classifier.preProcess(step['world_model_long'],3)
 				_, feature = classifier.extractFeature(z)
 
 				belief = bayes_filter.update(belief, feature)
-				y_pred.append(bayes_filter.predict(feature))
+				y_pred.append(bayes_filter.predict(belief))
+
+
 
 	report = classifier.classification_report_(y_true, y_pred)
 	confusion = classifier.confusion_matrix_(y_true, y_pred)
@@ -153,4 +155,4 @@ if __name__ == '__main__':
 	print(confusion)	
 
 
-	#run()
+	run()
