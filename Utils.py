@@ -298,10 +298,10 @@ class GaussianFilter:
 
 
 	# learn from %10 steps
-	# counts start from 0 (no add-one smoothing)
+	# counts start from 1 (add-one smoothing)
 	def estimateTransitionModel(self, dataset):
 
-		joint = np.zeros((self.state_dim, self.state_dim))
+		joint = np.ones((self.state_dim, self.state_dim))
 
 		for i in range(len(dataset)-10):
 			classid = self.classifier.classlbl_to_id[dataset[i]['true_class']]

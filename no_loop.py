@@ -1,5 +1,6 @@
 import csv
 from p5 import *
+from pprint import pprint
 from Utils import Classifier, DiscreteFilter, GaussianFilter, loadDataset, map_ground_truth
 
 
@@ -84,72 +85,74 @@ if __name__ == '__main__':
 	dyn_dataset = loadDataset()
 	print("Dataset: ", len(dyn_dataset))
 
-	# no filter---------------------------------------------------
+	# # no filter---------------------------------------------------
 
-	classifier = Classifier()
+	# classifier = Classifier()
 
-	y_pred,x_pred,y_true = [],[],[]
-	for step in dyn_dataset:
-		if step['clock']%10 == 0:
-			x = [step['x']*50, step['y']*50]
-			x_pred.append(x)
-			y_true.append(step['true_class'])
-			z = classifier.preProcess(step['world_model_long'],3)
-			_, feature = classifier.extractFeature(z)
-			y_pred.append(classifier.predict(feature))
+	# y_pred,x_pred,y_true = [],[],[]
+	# for step in dyn_dataset:
+	# 	if step['clock']%10 == 0:
+	# 		x = [step['x']*50, step['y']*50]
+	# 		x_pred.append(x)
+	# 		y_true.append(step['true_class'])
+	# 		z = classifier.preProcess(step['world_model_long'],3)
+	# 		_, feature = classifier.extractFeature(z)
+	# 		y_pred.append(classifier.predict(feature))
 
-	print("Test set: ", len(y_true))
-
-
-	report = classifier.classification_report_(y_true, y_pred)
-	confusion = classifier.confusion_matrix_(y_true, y_pred)
-
-	print(report)
-	print()
-	print(confusion)
+	# print("Test set: ", len(y_true))
 
 
-	#discrete filter----------------------------------------------
+	# report = classifier.classification_report_(y_true, y_pred)
+	# confusion = classifier.confusion_matrix_(y_true, y_pred)
 
-	discrete_filter = DiscreteFilter(dyn_dataset[:12000])
-	print("Vocabulary: ", discrete_filter.observation_model.shape[0])
-
-	belief = [0.0, 0.0, 1.0, 0.0] # parte in V [I C V G]
-
-	y_pred,x_pred,y_true = [],[],[]
-	for step in dyn_dataset[12001:]:
-		if step['clock']%10 == 0:
-			x = [step['x']*50, step['y']*50]
-			x_pred.append(x)
-			y_true.append(step['true_class'])
-			z = classifier.preProcess(step['world_model_long'],3)
-			_, feature = classifier.extractFeatureRaw(z)
-
-			belief = discrete_filter.update(belief, feature)
-			y_pred.append(discrete_filter.predict(belief))
+	# print(report)
+	# print()
+	# print(confusion)
 
 
-	print("Test set: ", len(y_true))
+	# #discrete filter----------------------------------------------
 
-	report = classifier.classification_report_(y_true, y_pred)
-	confusion = classifier.confusion_matrix_(y_true, y_pred)
+	# discrete_filter = DiscreteFilter(dyn_dataset[:12000])
+	# print("Vocabulary: ", discrete_filter.observation_model.shape[0])
 
-	print(report)
-	print()
-	print(confusion)
+	# belief = [0.0, 0.0, 1.0, 0.0] # parte in V [I C V G]
+
+	# y_pred,x_pred,y_true = [],[],[]
+	# for step in dyn_dataset[12001:]:
+	# 	if step['clock']%10 == 0:
+	# 		x = [step['x']*50, step['y']*50]
+	# 		x_pred.append(x)
+	# 		y_true.append(step['true_class'])
+	# 		z = classifier.preProcess(step['world_model_long'],3)
+	# 		_, feature = classifier.extractFeatureRaw(z)
+
+	# 		belief = discrete_filter.update(belief, feature)
+	# 		y_pred.append(discrete_filter.predict(belief))
+
+
+	# print("Test set: ", len(y_true))
+
+	# report = classifier.classification_report_(y_true, y_pred)
+	# confusion = classifier.confusion_matrix_(y_true, y_pred)
+
+	# print(report)
+	# print()
+	# print(confusion)
 
 
 
 	#Gaussian filter----------------------------------------------
 
-
-	gaussian_filter = GaussianFilter(dyn_dataset[:12000])
+	classifier = Classifier()
+	gaussian_filter = GaussianFilter(dyn_dataset)
+	pprint(gaussian_filter.transition_model)
 	print("Parameters: ", gaussian_filter.parameters)
+
 
 	belief = [0.0, 0.0, 1.0, 0.0] # parte in V [I C V G]
 
 	y_pred,x_pred,y_true = [],[],[]
-	for step in dyn_dataset[12001:]:
+	for step in dyn_dataset:
 		if step['clock']%10 == 0:
 			x = [step['x']*50, step['y']*50]
 			x_pred.append(x)
