@@ -111,7 +111,7 @@
     <!-- Robots -->
 
     <foot-bot id="fb_0">
-      <body position="0,7.5,0" orientation="90,0,0" />
+      <body position="0,8.5,0" orientation="-90,0,0" />
       <controller config="fwc"/>
     </foot-bot>
 

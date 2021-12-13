@@ -303,7 +303,6 @@ class GaussianFilter:
 	# learn from %10 steps
 	# counts start from 1 (add-one smoothing)
 	def estimateTransitionModel(self, dataset):
-
 		joint = np.ones((self.state_dim, self.state_dim))
 
 		for i in range(len(dataset)-10):
@@ -318,48 +317,23 @@ class GaussianFilter:
 		self.transition_model = joint/np.sum(joint, axis=0)
 
 
-	# def estimateObservationModel(self, dataset):
-	# 	self.parameters = {}
-
-	# 	for step in dataset:
-	# 		if step['true_class'] not in self.parameters:
-	# 			self.parameters[step['true_class']] = {'mu':0.0, 'sigma':0.0, 'n':0}
-
-	# 		self.parameters[step['true_class']]['n'] += 1
-	# 		z = self.classifier.preProcess(step['world_model_long'],3)
-	# 		self.parameters[step['true_class']]['mu'] += self.extractFeature(z)[0]
-
-	# 	for classlbl,p in self.parameters.items():
-	# 		p['mu'] /= p['n']
-
-	# 	for step in dataset:
-	# 		z = self.classifier.preProcess(step['world_model_long'],3)
-	# 		self.parameters[step['true_class']]['sigma'] += (self.extractFeature(z)[0] - self.parameters[step['true_class']]['mu'])**2
-
-	# 	for classlbl,p in self.parameters.items():
-	# 		p['sigma'] /= p['n']
-
 	def estimateObservationModel(self, dataset):
 		self.parameters = {}
 
 		X,y = [],[]
 		for step in dataset:
 			z = self.classifier.preProcess(step['world_model_long'],3)
-			X.append(extractFeature(z))
+			X.append(self.extractFeature(z))
 			y.append(self.classifier.classlbl_to_id[step['true_class']])
-
 
 		clf = LinearDiscriminantAnalysis(store_covariance=True)
 		clf.fit(X, y)
 
 		for i in range(clf.means_.shape[0]):
-			self.parameters[self.classifier.id_to_classlbl[i]]['mu'] = clf.means_[i,:].reshape((-1,1))
-			self.parameters[self.classifier.id_to_classlbl[i]]['sigma'] = np.linalg.inv(clf.covariance_)
+			self.parameters[self.classifier.id_to_classlbl[i]] = {'mu':clf.means_[i,:].reshape((-1,1)), 'sigma':np.linalg.inv(clf.covariance_)}
+ 
 
-
-
-	def extractFeature(measurement):
-
+	def extractFeature(self,measurement):
 		poly_v = []
 		for a,d in measurement.items():
 			x = d*np.cos(a)
@@ -401,9 +375,7 @@ class GaussianFilter:
 		max_diameter = max(diameters)
 		min_diameter = min(diameters)
 
-		return [0.5*convex_A, convex_P, max_diameter, min_diameter]
-
-
+		return [(0.5*A)/(PI*150.0**2), P/(2*PI*150.0)]
 
 	
 	def gaussian(self, x, mu, sig):
