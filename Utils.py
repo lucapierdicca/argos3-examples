@@ -1,6 +1,9 @@
 import numpy as np
+
 from sklearn.metrics import confusion_matrix, classification_report
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis, QuadraticDiscriminantAnalysis
 from pprint import pprint
+from scipy.spatial import ConvexHull
 import csv
 
 PI = 3.14159265358979323846264338327950288
@@ -290,11 +293,11 @@ class DiscreteFilter:
 
 class GaussianFilter:
 	
-	def __init__(self, dataset):
+	def __init__(self, transition_dataset, observation_dataset):
 		self.state_dim = 4
 		self.classifier = Classifier()
-		self.estimateTransitionModel(dataset)
-		self.estimateObservationModel(dataset)
+		self.estimateTransitionModel(transition_dataset)
+		self.estimateObservationModel(observation_dataset)
 
 
 	# learn from %10 steps
@@ -315,7 +318,47 @@ class GaussianFilter:
 		self.transition_model = joint/np.sum(joint, axis=0)
 
 
-	def extractFeature(self, measurement):
+	# def estimateObservationModel(self, dataset):
+	# 	self.parameters = {}
+
+	# 	for step in dataset:
+	# 		if step['true_class'] not in self.parameters:
+	# 			self.parameters[step['true_class']] = {'mu':0.0, 'sigma':0.0, 'n':0}
+
+	# 		self.parameters[step['true_class']]['n'] += 1
+	# 		z = self.classifier.preProcess(step['world_model_long'],3)
+	# 		self.parameters[step['true_class']]['mu'] += self.extractFeature(z)[0]
+
+	# 	for classlbl,p in self.parameters.items():
+	# 		p['mu'] /= p['n']
+
+	# 	for step in dataset:
+	# 		z = self.classifier.preProcess(step['world_model_long'],3)
+	# 		self.parameters[step['true_class']]['sigma'] += (self.extractFeature(z)[0] - self.parameters[step['true_class']]['mu'])**2
+
+	# 	for classlbl,p in self.parameters.items():
+	# 		p['sigma'] /= p['n']
+
+	def estimateObservationModel(self, dataset):
+		self.parameters = {}
+
+		X,y = [],[]
+		for step in dataset:
+			z = self.classifier.preProcess(step['world_model_long'],3)
+			X.append(extractFeature(z))
+			y.append(self.classifier.classlbl_to_id[step['true_class']])
+
+
+		clf = LinearDiscriminantAnalysis(store_covariance=True)
+		clf.fit(X, y)
+
+		for i in range(clf.means_.shape[0]):
+			self.parameters[self.classifier.id_to_classlbl[i]]['mu'] = clf.means_[i,:].reshape((-1,1))
+			self.parameters[self.classifier.id_to_classlbl[i]]['sigma'] = np.linalg.inv(clf.covariance_)
+
+
+
+	def extractFeature(measurement):
 
 		poly_v = []
 		for a,d in measurement.items():
@@ -326,38 +369,45 @@ class GaussianFilter:
 
 		poly_v.append(poly_v[0])
 
+
+		# Perimeter and Area (shoelace formula)
 		A = 0.0
 		P = 0.0
 		for i in range(len(poly_v)-1):
 			A += poly_v[i][0]*poly_v[i+1][1] - poly_v[i][1]*poly_v[i+1][0]
 			P += np.linalg.norm(np.array(poly_v[i+1])-np.array(poly_v[i]))
 
-		return 0.5*A, P
+		# Perimeter and Area convex_hull
+		hull_indices = ConvexHull(poly_v[:-1]).vertices
+		hull_v = [poly_v[index] for index in hull_indices]
+		hull_v.append(hull_v[0])
 
-	def estimateObservationModel(self, dataset):
-		self.parameters = {}
+		convex_A = 0.0
+		convex_P = 0.0
+		for i in range(len(hull_v)-1):
+			convex_A += hull_v[i][0]*hull_v[i+1][1] - hull_v[i][1]*hull_v[i+1][0]
+			convex_P += np.linalg.norm(np.array(hull_v[i+1])-np.array(hull_v[i]))
 
-		for step in dataset:
-			if step['true_class'] not in self.parameters:
-				self.parameters[step['true_class']] = {'mu':0.0, 'sigma':0.0, 'n':0}
+		#Max and min Feret's diameters
+		max_diameter = 0.0
+		min_diameter = 0.0
 
-			self.parameters[step['true_class']]['n'] += 1
-			z = self.classifier.preProcess(step['world_model_long'],3)
-			self.parameters[step['true_class']]['mu'] += self.extractFeature(z)[0]
+		diameters = []
 
-		for classlbl,p in self.parameters.items():
-			p['mu'] /= p['n']
+		d = list(measurement.values())
+		for i in range(len(d) - 60):
+			diameters.append(d[i]+d[i+59])
 
-		for step in dataset:
-			z = self.classifier.preProcess(step['world_model_long'],3)
-			self.parameters[step['true_class']]['sigma'] += (self.extractFeature(z)[0] - self.parameters[step['true_class']]['mu'])**2
+		max_diameter = max(diameters)
+		min_diameter = min(diameters)
 
-		for classlbl,p in self.parameters.items():
-			p['sigma'] /= p['n']
+		return [0.5*convex_A, convex_P, max_diameter, min_diameter]
+
+
 
 	
 	def gaussian(self, x, mu, sig):
-	    return 1./(np.sqrt(2.*np.pi)*sig)*np.exp(-np.power((x - mu), 2.)/(2*sig))
+	    return np.exp(-0.5*(x-mu).T@sig@(x-mu))
 
 	def update(self, belief, feature):
 		bt_t_1 = [0.0]*self.state_dim
@@ -369,7 +419,7 @@ class GaussianFilter:
 		btt = [0.0]*self.state_dim
 		den = 0.0
 		for i in range(self.state_dim):
-			pdf = self.gaussian(feature,
+			pdf = self.gaussian(np.array(feature).reshape((-1,1)),
 								self.parameters[self.classifier.id_to_classlbl[i]]['mu'],
 								self.parameters[self.classifier.id_to_classlbl[i]]['sigma'])
 			btt[i] = pdf*bt_t_1[i]

@@ -82,8 +82,13 @@ def draw():
 
 if __name__ == '__main__':
 	
-	dyn_dataset = loadDataset()
-	print("Dataset: ", len(dyn_dataset))
+	wallfollowing_dataset = loadDataset("wallfollowing_dataset.csv")
+	print("wallfollowing_dataset: ", len(wallfollowing_dataset))
+
+	randomwalk_dataset = loadDataset("randomwalk_dataset.csv")
+	print("randomwalk_dataset: ", len(randomwalk_dataset))
+
+	
 
 	# # no filter---------------------------------------------------
 
@@ -144,7 +149,7 @@ if __name__ == '__main__':
 	#Gaussian filter----------------------------------------------
 
 	classifier = Classifier()
-	gaussian_filter = GaussianFilter(dyn_dataset)
+	gaussian_filter = GaussianFilter(wallfollowing_dataset, randomwalk_dataset)
 	pprint(gaussian_filter.transition_model)
 	print("Parameters: ", gaussian_filter.parameters)
 
@@ -152,7 +157,7 @@ if __name__ == '__main__':
 	belief = [0.0, 0.0, 1.0, 0.0] # parte in V [I C V G]
 
 	y_pred,x_pred,y_true = [],[],[]
-	for step in dyn_dataset:
+	for step in wallfollowing_dataset:
 		if step['clock']%10 == 0:
 			x = [step['x']*50, step['y']*50]
 			x_pred.append(x)
@@ -160,7 +165,7 @@ if __name__ == '__main__':
 			z = classifier.preProcess(step['world_model_long'],3)
 			feature = gaussian_filter.extractFeature(z)
 
-			belief = gaussian_filter.update(belief, feature[0])
+			belief = gaussian_filter.update(belief, feature)
 			y_pred.append(gaussian_filter.predict(belief))
 
 

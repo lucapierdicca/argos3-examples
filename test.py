@@ -6,7 +6,7 @@ import csv
 from collections import deque
 from scipy.spatial import ConvexHull
 from pprint import pprint
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis, QuadraticDiscriminantAnalysis
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, accuracy_score
 
@@ -106,18 +106,22 @@ if __name__ == '__main__':
 	classlbl_to_id = {classlbl:index for index, classlbl in enumerate(list(support.keys()))}
 
 	X,y = [],[]
-	for step in dataset:
+	for step in dataset[:1000]:
 		X.append(extractFeature(step['world_model_long']))
 		y.append(classlbl_to_id[step['true_class']])
 
-	X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.75)
+	X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, stratify=y)
 
-	clf = LinearDiscriminantAnalysis()
+
+
+	clf = LinearDiscriminantAnalysis(store_covariance=True)
 	clf.fit(np.array(X_train), np.array(y_train))
+
+	print(clf.means_[0,:].reshape((-1,1)))
 
 	y_pred = clf.predict(X_test)
 
-	print(accuracy_score(y_test, y_pred))
+	print(classification_report(y_test, y_pred))
 
 
 	# x,y,c = [],[],[]
