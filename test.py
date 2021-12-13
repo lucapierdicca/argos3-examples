@@ -5,6 +5,12 @@ import matplotlib.pyplot as plt
 import csv
 from collections import deque
 from scipy.spatial import ConvexHull
+from pprint import pprint
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report, accuracy_score
+
+
 
 
 
@@ -75,7 +81,7 @@ def extractFeature(measurement):
 	max_diameter = max(diameters)
 	min_diameter = min(diameters)
 
-	return np.mean(diameters), 0
+	return [convex_A, convex_P, max_diameter, min_diameter]
 
 
 
@@ -83,25 +89,53 @@ def extractFeature(measurement):
 
 if __name__ == '__main__':
 
-	dyn_dataset = loadDataset("dynamic_dataset.csv")
-	print("Dataset: ", len(dyn_dataset))
-
-	x,y,c = [],[],[]
-	for step in dyn_dataset:
-		solidity, convexity = extractFeature(step['world_model_long'])
-
-		x.append(solidity)
-		#y.append(convexity)
-		if step['true_class'] == 'I': y.append(1)
-		if step['true_class'] == 'C': y.append(2)
-		if step['true_class'] == 'V': y.append(3)
-		if step['true_class'] == 'G': y.append(4)	
-
-		c.append((step['color'][0]/255.0, step['color'][1]/255.0, step['color'][2]/255.0))
+	dataset = loadDataset("randomwalk_dataset.csv")
+	print("Dataset: ", len(dataset))
 
 
-	plt.scatter(x, y, s=3.0, c=c, alpha=0.2)
-	plt.show()
+	support = {}
+	for step in dataset:
+		if step['true_class'] not in support:
+			support[step['true_class']] = 1
+		else:
+			support[step['true_class']] += 1
+
+	pprint(support)
+
+
+	classlbl_to_id = {classlbl:index for index, classlbl in enumerate(list(support.keys()))}
+
+	X,y = [],[]
+	for step in dataset:
+		X.append(extractFeature(step['world_model_long']))
+		y.append(classlbl_to_id[step['true_class']])
+
+	X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.75)
+
+	clf = LinearDiscriminantAnalysis()
+	clf.fit(np.array(X_train), np.array(y_train))
+
+	y_pred = clf.predict(X_test)
+
+	print(accuracy_score(y_test, y_pred))
+
+
+	# x,y,c = [],[],[]
+	# for step in dyn_dataset:
+	# 	solidity, convexity = extractFeature(step['world_model_long'])
+
+	# 	x.append(solidity)
+	# 	#y.append(convexity)
+	# 	if step['true_class'] == 'I': y.append(1)
+	# 	if step['true_class'] == 'C': y.append(2)
+	# 	if step['true_class'] == 'V': y.append(3)
+	# 	if step['true_class'] == 'G': y.append(4)	
+
+	# 	c.append((step['color'][0]/255.0, step['color'][1]/255.0, step['color'][2]/255.0))
+
+
+	# plt.scatter(x, y, s=3.0, c=c, alpha=0.2)
+	# plt.show()
 
 
 

@@ -16,8 +16,9 @@ CFootBotWall::CFootBotWall() : // initializer list
    m_pcPositioning(NULL),
    m_cAlpha(10.0f),
    m_fDelta(0.5f),
-   m_fWheelVelocity(2.5f) {}
-
+   m_fWheelVelocity(2.5f),   
+   m_cGoStraightAngleRange(-ToRadians(m_cAlpha),
+                           ToRadians(m_cAlpha)) {}
 
 void CFootBotWall::Init(TConfigurationNode& t_node) {
    
@@ -35,6 +36,7 @@ void CFootBotWall::Init(TConfigurationNode& t_node) {
    
    //Parse the configuration file
    GetNodeAttributeOrDefault(t_node, "alpha", m_cAlpha, m_cAlpha);
+   m_cGoStraightAngleRange.Set(-ToRadians(m_cAlpha), ToRadians(m_cAlpha));
    GetNodeAttributeOrDefault(t_node, "delta", m_fDelta, m_fDelta);
    GetNodeAttributeOrDefault(t_node, "velocity", m_fWheelVelocity, m_fWheelVelocity);
 
@@ -304,6 +306,89 @@ std::array<Real,2> CFootBotWall::WallFollowing(Real r_distance_d){
 }
 
 
+std::array<Real,2> CFootBotWall::Diffusion(){
+
+   /* Sum them together */
+   Real v_l, v_r;
+   CVector2 cAccumulator;
+
+   for(size_t i = 0; i < world_model_proxy.size(); ++i) {
+      cAccumulator += CVector2(world_model_proxy[i].distance, world_model_proxy[i].angle);
+   }
+   cAccumulator /= world_model_proxy.size();
+   /* If the angle of the vector is small enough and the closest obstacle
+    * is far enough, continue going straight, otherwise curve a little
+    */
+   CRadians cAngle = cAccumulator.Angle();
+   Real cLength = cAccumulator.Length();
+
+   if (cLength == 0.0){
+      if(tic % 30 == 0 || chosen){
+         
+         if (!chosen){
+            std::random_device rd;
+            std::default_random_engine eng(rd());
+            std::uniform_real_distribution<float> distr(0, 1);
+            
+            if (distr(eng) >= 0.5)
+               choice = 0;
+            else
+               choice = 1;
+
+            chosen = true;
+         }
+
+         if (counter < 10){
+            if (choice == 0){
+               v_l = 2.0;
+               v_r = -2.0;
+            }
+            else{
+               v_l = -2.0;
+               v_r = 2.0;
+            }
+         counter++;
+         }
+         
+         else{
+            counter = 0;
+            chosen = false;
+         }
+         
+      }
+      else{
+         v_l = 5.0;
+         v_r = 5.0;
+      }
+   }
+   else{
+      if(m_cGoStraightAngleRange.WithinMinBoundIncludedMaxBoundIncluded(cAngle)) {
+         if(cAngle.GetValue() > 0.0f) {
+            v_l = 2.0;
+            v_r = 0.0;
+         }
+         else {
+            v_l = 0.0;
+            v_r = 2.0;
+         }
+      }
+      else{
+         v_l = 5.0;
+         v_r = 5.0;
+      }
+   }
+
+
+
+
+   std::cout << cAngle << " " << cLength << "\n";
+   std::cout << v_l << " " << v_r << "\n";
+
+   return {v_l, v_r};
+
+}
+
+
 void CFootBotWall::ControlStep() {
 
    //std::cout << "STEP" << "\n";
@@ -311,8 +396,9 @@ void CFootBotWall::ControlStep() {
    // reset sectors_data (for the next control step)
    for (const auto& [sectorLbl, sectorData] : sectorLbl_to_sectorData)
       sectorLbl_to_sectorData[sectorLbl].readings.clear();
+   world_model_proxy.clear();
 
-   //pr.clear();
+   pr.clear();
    
 
    // get the current step readings
@@ -320,6 +406,7 @@ void CFootBotWall::ControlStep() {
    const CCI_FootBotDistanceScannerSensor::TReadingsMap& short_readings = m_pcDistanceS->GetShortReadingsMap();
    const CCI_RangeAndBearingSensor::TReadings& rab_readings = m_pcRangeAndBearingS->GetReadings();
    const CCI_PositioningSensor::SReading& robot_state = m_pcPositioning->GetReading();
+   const CCI_FootBotProximitySensor::TReadings& tProxReads = m_pcProximity->GetReadings();
 
    
    // add the current step readings in the map world_model_long (it starts empty then it grows then it stops)
@@ -340,6 +427,10 @@ void CFootBotWall::ControlStep() {
       world_model_short[angle] = {angle,mod_distance,tic};
    }
 
+   for (auto proxymity_read : tProxReads){
+      world_model_proxy.push_back({proxymity_read.Angle, proxymity_read.Value, 0});
+   }
+
 
    // add the readings to the opportune sector based on the sector angle_interval
    for (const auto& [angle, angleData] : world_model_long){
@@ -353,7 +444,7 @@ void CFootBotWall::ControlStep() {
 
 
 
-   //processReadings('H');
+   processReadings('H');
 
 
    tic++;
@@ -361,25 +452,26 @@ void CFootBotWall::ControlStep() {
 
 
    if(tic%10 == 0){
-      //std::cout << "STORE\n";
-      //std::cout << tic << "\n";
-      //std::cout << dataset_step_data.size() << "\n";
-      //std::cout << world_model_long.size() << "\n";
-      //lmr_new.clear();
-      //lMr.clear(); 
-      //getLocalMinMaxReadings();
+      // std::cout << "STORE\n";
+      // std::cout << tic << "\n";
+      // std::cout << dataset_step_data.size() << "\n";
+      // std::cout << world_model_long.size() << "\n";
+      // lmr_new.clear();
+      // lMr.clear(); 
+      // getLocalMinMaxReadings();
 
 
-      //std::cout << "CANCELLA\n";
-      //world_model_long.clear();
-      //world_model_short.clear();
+      // std::cout << "CANCELLA\n";
+      // world_model_long.clear();
+      // world_model_short.clear();
+   
    }
 
    
 
 
    // compute the inputs
-   auto input = WallFollowing(55.0);
+   auto input =  Diffusion();//WallFollowing(55.0);
    
    // set the inputs
    m_pcWheels->SetLinearVelocity(input[0], input[1]);
@@ -406,7 +498,7 @@ void CFootBotWall::ControlStep() {
       std::cout << "DUMPED\n";
       
       std::ofstream file;
-      file.open("dynamic_dataset.csv", std::ios_base::app);
+      file.open("randomwalk_dataset.csv", std::ios_base::app);
       for(auto step : dataset_step_data){
 
          if (step.long_readings.size() == 120 && step.short_readings.size() == 120){

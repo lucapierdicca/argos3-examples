@@ -17,7 +17,7 @@ void CWallLoopFunctions::Init(TConfigurationNode& t_tree){
 void CWallLoopFunctions::PostStep() {
 
 
-    if (GetSpace().GetSimulationClock() % 11 == 0 && GetSpace().GetSimulationClock() != 0){
+    if (GetSpace().GetSimulationClock() % 10 == 0 && GetSpace().GetSimulationClock() != 0){
 
         //std::cout << "SPOSTA" << "\n";
 

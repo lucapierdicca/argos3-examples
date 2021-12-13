@@ -42,7 +42,7 @@ def loadDataset(path="dynamic_dataset.csv"):
 		'world_model_long':{}, 
 		'world_model_short':{}}
 		
-		step['clock'] = int(row[0])-10
+		step['clock'] = int(row[0])
 		step['x'] = float(row[1].replace(",","."))
 		step['y'] = float(row[2].replace(",","."))
 		step['theta'] = float(row[3].replace(",","."))

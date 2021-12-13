@@ -73,31 +73,16 @@ private:
 
 
 
-
-   /*
-    * The following variables are used as parameters for the
-    * algorithm. You can set their value in the <parameters> section
-    * of the XML configuration file, under the
-    * <controllers><footbot_diffusion_controller> section.
-    */
-
-   /* Maximum tolerance for the angle between
-    * the robot heading direction and
-    * the closest obstacle detected. */
    CDegrees m_cAlpha;
-   /* Maximum tolerance for the proximity reading between
-    * the robot and the closest obstacle.
-    * The proximity reading is 0 when nothing is detected
-    * and grows exponentially to 1 when the obstacle is
-    * touching the robot.
-    */
    Real m_fDelta;
    Real m_fWheelVelocity;
+   CRange<CRadians> m_cGoStraightAngleRange;
 
-   
 
    CRadians chosen_direction;
    bool chosen = false;
+   int choice;
+   int counter = 0;
 
 
    Real desired_orientation;
@@ -118,6 +103,7 @@ public:
 
    std::map<CRadians, struct angle_data> world_model_short;
    std::map<CRadians, struct angle_data> world_model_long;
+   std::vector<struct angle_data> world_model_proxy;
 
    std::vector<struct angle_data> lmr_old_copy;
    std::vector<struct angle_data> lmr_old;
@@ -157,6 +143,7 @@ public:
    Real EucDistance(std::array<int,4> u, std::array<int,4> v);
    char predict(std::array<int,4> features);
    std::array<Real,2> WallFollowing(Real r_distance_d);
+   std::array<Real,2> Diffusion();
 
    /* Class constructor. */
    CFootBotWall();
