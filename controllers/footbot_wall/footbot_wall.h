@@ -110,6 +110,7 @@ public:
    std::vector<struct angle_data> lmr_new;
    std::vector<struct angle_data> lMr; 
    std::vector<struct angle_data> pr;
+   struct angle_data free_min;
  
 
    struct step_data{
@@ -142,7 +143,7 @@ public:
    std::array<int,4> extractFeatures();
    Real EucDistance(std::array<int,4> u, std::array<int,4> v);
    char predict(std::array<int,4> features);
-   std::array<Real,2> WallFollowing(Real r_distance_d);
+   std::array<Real,2> WallFollowing(Real r_distance_d, const CCI_RangeAndBearingSensor::TReadings&  rab_readings);
    std::array<Real,2> Diffusion();
 
    /* Class constructor. */

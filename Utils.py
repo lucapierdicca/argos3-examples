@@ -293,11 +293,20 @@ class DiscreteFilter:
 
 class GaussianFilter:
 	
-	def __init__(self, transition_dataset, observation_dataset):
+	def __init__(self, transition_dataset, observation_dataset, template_dataset):
 		self.state_dim = 4
 		self.classifier = Classifier()
+
+		self.template = {}
+		for step in template_dataset:
+			z = self.classifier.preProcess(step['world_model_long'], 3)
+			self.template[step['true_class']] = z
+
+
 		self.estimateTransitionModel(transition_dataset)
 		self.estimateObservationModel(observation_dataset)
+
+
 
 
 	# learn from %10 steps
@@ -377,7 +386,32 @@ class GaussianFilter:
 
 		return [(0.5*A)/(PI*150.0**2), P/(2*PI*150.0)]
 
-	
+
+	def extractFeatureTemplate(self, measurement):
+
+		def minDistance(value1, value2):
+			distance_values = []
+
+			for i in range(120):
+				s = 0
+				for v1,v2 in zip(value1,value2):
+					s += (v1-v2)**2
+				distance_values.append(s)
+
+				value2.insert(0, value2[-1])
+				value2.pop()
+
+			return min(distance_values)
+
+
+		feature = []
+
+		for classlbl,readings in self.template.items():
+			feature.append(minDistance(list(readings.values()), list(measurement.values())))
+
+		return feature
+
+
 	def gaussian(self, x, mu, sig):
 	    return np.exp(-0.5*(x-mu).T@sig@(x-mu))
 

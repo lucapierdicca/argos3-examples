@@ -110,13 +110,23 @@
 
     <!-- Robots -->
 
-    <foot-bot id="fb_0">
-      <body position="0,8.5,0" orientation="-90,0,0" />
+    <distribute>
+      <position method="uniform" min="-0.8,-1.5,0" max="0.8,8.5,0" />
+      <orientation method="gaussian" mean="0,0,0" std_dev="360,0,0" />
+      <entity quantity="10" max_trials="100" base_num="0">
+        <foot-bot id="fb_">
+          <controller config="fwc" />
+        </foot-bot>
+      </entity>
+    </distribute>
+
+<!--     <foot-bot id="fb_0">
+      <body position="0,4.0,0" orientation="-90,0,0" />
       <controller config="fwc"/>
     </foot-bot>
 
-<!--    <foot-bot id="fb_1">
-      <body position="0.0,1.5,0" orientation="-90,0,0" />
+   <foot-bot id="fb_1">
+      <body position="0,3.0,0" orientation="-90,0,0" />
       <controller config="fwc"/>
     </foot-bot>  -->
    

@@ -258,17 +258,53 @@ char CFootBotWall::predict(std::array<int,4> feature){
 }
 
 
-std::array<Real,2> CFootBotWall::WallFollowing(Real r_distance_d){
+std::array<Real,2> CFootBotWall::WallFollowing(Real r_distance_d, const CCI_RangeAndBearingSensor::TReadings& rab_readings){
    Real v_l, v_r, v_l_def, v_r_def, v_l_dis, v_r_dis, v_l_ori, v_r_ori;
    CRadians r_orientation_d = -CRadians::PI_OVER_TWO; // desired orientation wrt the wall [rad]
    Real distance_error, orientation_error;
+
+   std::vector<CCI_RangeAndBearingSensor::SPacket> rab_readings_in_R;
+   for (auto rr : rab_readings){
+      if(rr.HorizontalBearing >= sectorLbl_to_sectorData['R'].angle_interval[0] && rr.HorizontalBearing <= sectorLbl_to_sectorData['R'].angle_interval[1]){
+         rab_readings_in_R.push_back(rr);
+      }
+   } 
+
+   std::vector<struct angle_data> free_readings;
+   CRadians delta(0.4);
+   bool free;
+   for(auto r : sectorLbl_to_sectorData['R'].readings){
+      free = true;
+      for (auto rr : rab_readings_in_R){
+         if (r.angle < rr.HorizontalBearing + delta && r.angle > rr.HorizontalBearing - delta){
+            free = false;
+            break;
+         }
+
+      }
+
+      if (free)
+         free_readings.push_back(r);
+      
+   }
+
+   struct angle_data min = {CRadians::ZERO, 150.0, 0};
+   for(auto fr : free_readings){
+      if (fr.distance <= min.distance){
+         min.distance = fr.distance;
+         min.angle = fr.angle;
+      }
+   }
+
+   free_min = min;
    
+      
    // default component
    v_r_def = 2.0 + 5.0*(getMinReading('F').second - r_distance_d)/(150.0 - r_distance_d);
    v_l_def = 2.0 + 5.0*(getMinReading('F').second - r_distance_d)/(150.0 - r_distance_d);
 
    // distance error component
-   distance_error = r_distance_d - getMinReading('R').second;
+   distance_error = r_distance_d - min.distance;
 
    if(distance_error > 0.0){
       v_r_dis = 0.1*abs(distance_error);
@@ -281,7 +317,7 @@ std::array<Real,2> CFootBotWall::WallFollowing(Real r_distance_d){
 
 
    // orientation error component
-   orientation_error = (r_orientation_d - getMinReading('R').first).SignedNormalize().GetValue();
+   orientation_error = (r_orientation_d - min.angle).SignedNormalize().GetValue();
 
    if(orientation_error <= CRadians::PI.GetValue()){
       if(orientation_error > 0.0){
@@ -299,7 +335,8 @@ std::array<Real,2> CFootBotWall::WallFollowing(Real r_distance_d){
    v_r = v_r_def + v_r_dis + v_r_ori;
    v_l = v_l_def + v_l_dis + v_l_ori;
 
-   //std::cout << v_l_def << " " << v_r_def << "\n";
+ 
+
 
    return {v_l, v_r};
 
@@ -471,7 +508,7 @@ void CFootBotWall::ControlStep() {
 
 
    // compute the inputs
-   auto input =  Diffusion();//WallFollowing(55.0);
+   auto input = WallFollowing(35.0, rab_readings);//Diffusion();
    
    // set the inputs
    m_pcWheels->SetLinearVelocity(input[0], input[1]);
@@ -481,24 +518,26 @@ void CFootBotWall::ControlStep() {
    CRadians x,y,theta;
    robot_state.Orientation.ToEulerAngles(theta,y,x);
 
-   dataset_step_data.push_back({tic,
-                                robot_state.Position.GetX(),
-                                robot_state.Position.GetY(),
-                                theta.GetValue(),
-                                input[0],
-                                input[1],
-                                world_model_long,
-                                world_model_short});
+   if(GetId() == "fb_0"){
+      dataset_step_data.push_back({tic,
+                                   robot_state.Position.GetX(),
+                                   robot_state.Position.GetY(),
+                                   theta.GetValue(),
+                                   input[0],
+                                   input[1],
+                                   world_model_long,
+                                   world_model_short});
+   }
 
 
 
    //dump the dataset into a .csv
-   if(tic%100 == 0){
+   if(tic%100 == 0 && GetId() == "fb_0"){
 
       std::cout << "DUMPED\n";
       
       std::ofstream file;
-      file.open("randomwalk_dataset.csv", std::ios_base::app);
+      file.open("wallfollowing_many_dataset.csv", std::ios_base::app);
       for(auto step : dataset_step_data){
 
          if (step.long_readings.size() == 120 && step.short_readings.size() == 120){

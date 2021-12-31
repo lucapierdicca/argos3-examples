@@ -88,6 +88,9 @@ if __name__ == '__main__':
 	randomwalk_dataset = loadDataset("randomwalk_dataset.csv")
 	print("randomwalk_dataset: ", len(randomwalk_dataset))
 
+	template_dataset = loadDataset("template.csv")
+	print("template_dataset: ", len(template_dataset))
+
 	
 
 	# # no filter---------------------------------------------------
@@ -149,7 +152,7 @@ if __name__ == '__main__':
 	#Gaussian filter----------------------------------------------
 
 	classifier = Classifier()
-	gaussian_filter = GaussianFilter(wallfollowing_dataset, randomwalk_dataset)
+	gaussian_filter = GaussianFilter(wallfollowing_dataset, randomwalk_dataset, template_dataset)
 	pprint(gaussian_filter.transition_model)
 	print("Parameters: ", gaussian_filter.parameters)
 
