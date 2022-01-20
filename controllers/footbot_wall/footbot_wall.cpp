@@ -7,6 +7,7 @@
 
 
 
+
 CFootBotWall::CFootBotWall() : // initializer list
    m_pcWheels(NULL),
    m_pcDistanceS(NULL),
@@ -54,8 +55,6 @@ void CFootBotWall::Init(TConfigurationNode& t_node) {
                            {'C',{0,0,0,2}},
                            {'G',{0,1,2,0}},
                            {'I',{0,4,0,0}}};
-
-                   
 
 }
 
@@ -263,38 +262,17 @@ std::array<Real,2> CFootBotWall::WallFollowing(Real r_distance_d, const CCI_Rang
    CRadians r_orientation_d = -CRadians::PI_OVER_TWO; // desired orientation wrt the wall [rad]
    Real distance_error, orientation_error;
 
-   std::vector<CCI_RangeAndBearingSensor::SPacket> rab_readings_in_R;
-   for (auto rr : rab_readings){
-      if(rr.HorizontalBearing >= sectorLbl_to_sectorData['R'].angle_interval[0] && rr.HorizontalBearing <= sectorLbl_to_sectorData['R'].angle_interval[1]){
-         rab_readings_in_R.push_back(rr);
-      }
-   } 
 
-   std::vector<struct angle_data> free_readings;
-   CRadians delta(0.4);
-   bool free;
+   struct angle_data min = {CRadians::ZERO, 150.0, 0, false};
    for(auto r : sectorLbl_to_sectorData['R'].readings){
-      free = true;
-      for (auto rr : rab_readings_in_R){
-         if (r.angle < rr.HorizontalBearing + delta && r.angle > rr.HorizontalBearing - delta){
-            free = false;
-            break;
-         }
-
-      }
-
-      if (free)
-         free_readings.push_back(r);
-      
-   }
-
-   struct angle_data min = {CRadians::ZERO, 150.0, 0};
-   for(auto fr : free_readings){
-      if (fr.distance <= min.distance){
-         min.distance = fr.distance;
-         min.angle = fr.angle;
+      if (!r.occluded){
+         if (r.distance <= min.distance){
+            min.distance = r.distance;
+            min.angle = r.angle;
+         }  
       }
    }
+
 
    free_min = min;
    
@@ -336,8 +314,6 @@ std::array<Real,2> CFootBotWall::WallFollowing(Real r_distance_d, const CCI_Rang
    v_l = v_l_def + v_l_dis + v_l_ori;
 
  
-
-
    return {v_l, v_r};
 
 }
@@ -416,11 +392,6 @@ std::array<Real,2> CFootBotWall::Diffusion(){
    }
 
 
-
-
-   std::cout << cAngle << " " << cLength << "\n";
-   std::cout << v_l << " " << v_r << "\n";
-
    return {v_l, v_r};
 
 }
@@ -448,12 +419,32 @@ void CFootBotWall::ControlStep() {
    
    // add the current step readings in the map world_model_long (it starts empty then it grows then it stops)
    Real mod_distance;
+   CVector2 rab_xy, shift_xy;
+   CRadians start, end;
+   Real fb_radius = 12.0f;
    for (const auto& [angle, distance] : long_readings){
       mod_distance = distance;
       if (mod_distance == -1) mod_distance = 20.0f;
       if (mod_distance == -2) mod_distance = 150.0f;
 
-      world_model_long[angle] = {angle,mod_distance,tic};
+      world_model_long[angle] = {angle, mod_distance, tic, false};
+   }
+
+   for (auto rr : rab_readings){
+      if(rr.Range < 150.0f){
+         rab_xy.FromPolarCoordinates(rr.Range, rr.HorizontalBearing);
+         shift_xy.Set(rab_xy.GetX(), rab_xy.GetY());
+         shift_xy = fb_radius * (shift_xy.Normalize().Perpendicularize());
+
+         start = (rab_xy + shift_xy).Angle();
+         end = rab_xy.Angle() + (rab_xy.Angle() - start);
+
+         for (const auto& [angle, distance] : long_readings){
+            if ((angle <= start && angle >= end))
+               world_model_long[angle].occluded = true;
+                       
+         }
+      }
    }
 
    for (const auto& [angle, distance] : short_readings){
@@ -479,13 +470,10 @@ void CFootBotWall::ControlStep() {
    }
 
 
-
-
    processReadings('H');
 
 
    tic++;
-
 
 
    if(tic%10 == 0){
@@ -508,8 +496,13 @@ void CFootBotWall::ControlStep() {
 
 
    // compute the inputs
-   auto input = WallFollowing(35.0, rab_readings);//Diffusion();
-   
+   auto input = WallFollowing(35.0, rab_readings); //Diffusion();
+
+   // Real INTERWHEEL_DISTANCE = 0.14f*100;
+
+   // std::cout << "v: " << (input[0]+input[1]) * 0.5 << "\n";
+   // std::cout << "w: " << (input[1]-input[0]) * 1/INTERWHEEL_DISTANCE << "\n";
+      
    // set the inputs
    m_pcWheels->SetLinearVelocity(input[0], input[1]);
    
@@ -537,7 +530,7 @@ void CFootBotWall::ControlStep() {
       std::cout << "DUMPED\n";
       
       std::ofstream file;
-      file.open("wallfollowing_many_dataset.csv", std::ios_base::app);
+      file.open("template.csv", std::ios_base::app);
       for(auto step : dataset_step_data){
 
          if (step.long_readings.size() == 120 && step.short_readings.size() == 120){

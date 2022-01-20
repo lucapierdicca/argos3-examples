@@ -293,19 +293,33 @@ class DiscreteFilter:
 
 class GaussianFilter:
 	
-	def __init__(self, transition_dataset, observation_dataset, template_dataset):
+	def __init__(self, feature_type, template_dataset):
 		self.state_dim = 4
 		self.classifier = Classifier()
+		self.feature_type = feature_type
 
-		self.template = {}
+		self.templates = {}
 		for step in template_dataset:
 			z = self.classifier.preProcess(step['world_model_long'], 3)
-			self.template[step['true_class']] = z
+			if step['true_class'] not in self.templates:
+				self.templates[step['true_class']] = [z]
+			else:
+				self.templates[step['true_class']].append(z)
 
+		self.template = {}
+		angles = list(z.keys())
+		
+		for true_class, readings in self.templates.items():
+			avg = [0.0]*120
+			n = len(readings)
+			for r in readings:
+				for i, distance in enumerate(r.values()):
+					avg[i] += distance
 
-		self.estimateTransitionModel(transition_dataset)
-		self.estimateObservationModel(observation_dataset)
+			for i in range(len(avg)):
+				avg[i] /= n
 
+			self.template[true_class] = {angle:avg for angle,avg in zip(angles,avg)}
 
 
 
@@ -342,7 +356,14 @@ class GaussianFilter:
 			self.parameters[self.classifier.id_to_classlbl[i]] = {'mu':clf.means_[i,:].reshape((-1,1)), 'sigma':np.linalg.inv(clf.covariance_)}
  
 
-	def extractFeature(self,measurement):
+	def extractFeature(self, measurement):
+		if self.feature_type == "geometric":
+			return self.extractFeatureGeometric(measurement)
+		else:
+			return self.extractFeatureTemplate(measurement)
+	
+
+	def extractFeatureGeometric(self, measurement):
 		poly_v = []
 		for a,d in measurement.items():
 			x = d*np.cos(a)
@@ -416,12 +437,13 @@ class GaussianFilter:
 	    return np.exp(-0.5*(x-mu).T@sig@(x-mu))
 
 	def update(self, belief, feature):
+		#predict step
 		bt_t_1 = [0.0]*self.state_dim
 		for i in range(self.state_dim):
 			for j in range(self.state_dim):
 				bt_t_1[j] += self.transition_model[j, i]*belief[i]
 
-
+		#update step
 		btt = [0.0]*self.state_dim
 		den = 0.0
 		for i in range(self.state_dim):
@@ -441,9 +463,9 @@ class GaussianFilter:
 
 if __name__ == '__main__':
 
-	dyn_dataset = loadDataset()
+	dataset = loadDataset('template.csv')
 
-	gaussian_filter = GaussianFilter(dyn_dataset)
+	gaussian_filter = GaussianFilter('template', dataset)
 
-	print(gaussian_filter.parameters)
+	
 

@@ -81,17 +81,7 @@ def draw():
 
 
 if __name__ == '__main__':
-	
-	wallfollowing_dataset = loadDataset("wallfollowing_dataset.csv")
-	print("wallfollowing_dataset: ", len(wallfollowing_dataset))
 
-	randomwalk_dataset = loadDataset("randomwalk_dataset.csv")
-	print("randomwalk_dataset: ", len(randomwalk_dataset))
-
-	template_dataset = loadDataset("template.csv")
-	print("template_dataset: ", len(template_dataset))
-
-	
 
 	# # no filter---------------------------------------------------
 
@@ -150,9 +140,22 @@ if __name__ == '__main__':
 
 
 	#Gaussian filter----------------------------------------------
+	
+	train_structured = loadDataset("train_structured.csv")
+	train_unstructured = loadDataset("train_unstructured.csv")
+	template_dataset = loadDataset("template.csv")
+	test_dataset = loadDataset("test_structured_multi_40.csv")
+	
+	print("train_structured: ", len(train_structured))
+	print("train_unstructured: ", len(train_unstructured))
+	print("template_dataset: ", len(template_dataset))
+	print("test_dataset: ", len(test_dataset))
 
 	classifier = Classifier()
-	gaussian_filter = GaussianFilter(wallfollowing_dataset, randomwalk_dataset, template_dataset)
+	gaussian_filter = GaussianFilter("template", template_dataset)
+	gaussian_filter.estimateTransitionModel(train_structured)
+	gaussian_filter.estimateObservationModel(train_unstructured)
+	
 	pprint(gaussian_filter.transition_model)
 	print("Parameters: ", gaussian_filter.parameters)
 
@@ -160,7 +163,7 @@ if __name__ == '__main__':
 	belief = [0.0, 0.0, 1.0, 0.0] # parte in V [I C V G]
 
 	y_pred,x_pred,y_true = [],[],[]
-	for step in wallfollowing_dataset:
+	for step in test_dataset:
 		if step['clock']%10 == 0:
 			x = [step['x']*50, step['y']*50]
 			x_pred.append(x)

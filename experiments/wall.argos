@@ -108,25 +108,50 @@
       <body position="0,-2,0" orientation="0,0,0" />
     </box>
 
+    
+
     <!-- Robots -->
+<!--     <distribute>
+      <position method="uniform" min="-3.5,8,0" max="3.5,8.5,0" />
+      <orientation method="gaussian" mean="122,0,0" std_dev="360,0,0" />
+      <entity quantity="10" max_trials="100" base_num="0">
+        <foot-bot id="fb_2">
+          <controller config="fwc" />
+        </foot-bot>
+      </entity>
+    </distribute> -->
+
 
     <distribute>
-      <position method="uniform" min="-0.8,-1.5,0" max="0.8,8.5,0" />
-      <orientation method="gaussian" mean="0,0,0" std_dev="360,0,0" />
-      <entity quantity="10" max_trials="100" base_num="0">
+      <position method="uniform" min="-0.5,-2,0" max="0.5,8,0" />
+      <orientation method="gaussian" mean="122,0,0" std_dev="360,0,0" />
+      <entity quantity="30" max_trials="100" base_num="0">
         <foot-bot id="fb_">
           <controller config="fwc" />
         </foot-bot>
       </entity>
     </distribute>
 
+
+<!--     <distribute>
+      <position method="uniform" min="-3.5,2.5,0" max="3.5,3,0" />
+      <orientation method="gaussian" mean="122,0,0" std_dev="360,0,0" />
+      <entity quantity="10" max_trials="100" base_num="0">
+        <foot-bot id="fb_3">
+          <controller config="fwc" />
+        </foot-bot>
+      </entity>
+    </distribute> -->
+
+
 <!--     <foot-bot id="fb_0">
-      <body position="0,4.0,0" orientation="-90,0,0" />
+      <body position="-0.375,0,0" orientation="90,0,0" />
       <controller config="fwc"/>
     </foot-bot>
 
+
    <foot-bot id="fb_1">
-      <body position="0,3.0,0" orientation="-90,0,0" />
+      <body position="0.375,-1.5,0" orientation="90,0,0" />
       <controller config="fwc"/>
     </foot-bot>  -->
    
@@ -166,7 +191,7 @@
                       label="wall_qt_user_functions" />
       <camera>
         <placements>
-          <placement index="0" position="0.0,4,30" look_at="0.0,4,0.0" up="0,1,0" lens_focal_length="65" />
+          <placement index="0" position="0.0,3,30" look_at="0.0,3,0" up="0,1,0" lens_focal_length="65" />
         </placements>
       </camera>
     </qt-opengl>

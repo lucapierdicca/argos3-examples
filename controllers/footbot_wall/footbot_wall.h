@@ -99,6 +99,7 @@ public:
       CRadians angle;
       Real distance;
       int age;
+      bool occluded;
    };
 
    std::map<CRadians, struct angle_data> world_model_short;

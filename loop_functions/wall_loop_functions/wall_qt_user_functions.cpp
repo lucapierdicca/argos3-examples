@@ -16,6 +16,8 @@ CWALLQTUserFunctions::CWALLQTUserFunctions() {
 void CWALLQTUserFunctions::Draw(CFootBotEntity& c_entity) {
 
    DrawText(CVector3(0.0, 0.0, 0.5), c_entity.GetId().c_str());
+
+
    
    controller = dynamic_cast<CFootBotWall&> (c_entity.GetControllableEntity().GetController());
 
@@ -23,7 +25,7 @@ void CWALLQTUserFunctions::Draw(CFootBotEntity& c_entity) {
    auto min_length = controller.free_min.distance;
    CVector2 end = CVector2(min_length, min_angle);
    CRay3 ray = CRay3(CVector3(0.0, 0.0, 0.01) ,CVector3(end.GetX()*0.01, (end.GetY())*0.01, 0.01));
-   DrawRay(ray);
+   DrawRay(ray, CColor::BLACK, 2.0f);
 
 
    if(controller.GetId() == "fb_0"){
@@ -36,6 +38,16 @@ void CWALLQTUserFunctions::Draw(CFootBotEntity& c_entity) {
       // }
       
 
+      // for (auto r : controller.sectorLbl_to_sectorData['R'].readings){
+      //    CVector2 end = CVector2(r.distance, r.angle);
+      //    CRay3 ray = CRay3(CVector3(0.0, 0.0, 0.01) ,CVector3(end.GetX()*0.01, (end.GetY())*0.01, 0.01));
+      //    if(r.occluded)
+      //       DrawRay(ray, CColor::BLUE, 2.0f);
+      //    else
+      //       DrawRay(ray);
+      //    DrawText(CVector3(end.GetX()*0.01, (end.GetY())*0.01, 0.01), std::to_string(r.age));
+
+      // }
 
       
 
