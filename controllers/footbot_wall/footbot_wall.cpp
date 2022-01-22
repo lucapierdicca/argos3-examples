@@ -262,8 +262,10 @@ std::array<Real,2> CFootBotWall::StructuredExploration(
    CRadians r_orientation_d,
    const CCI_RangeAndBearingSensor::TReadings& rab_readings){
    
-   Real v_l, v_r, v_l_def, v_r_def, v_l_dis, v_r_dis, v_l_ori, v_r_ori;
+   
+   Real v, w, w_dis, w_ori;
    Real distance_error, orientation_error;
+   Real L = 14.0; // wheels distance [cm] 
 
 
    struct angle_data min = {CRadians::ZERO, 150.0, 0, false};
@@ -276,46 +278,27 @@ std::array<Real,2> CFootBotWall::StructuredExploration(
       }
    }
 
-   free_min = min;
+   this->free_min = min;
       
-   // default component
-   v_r_def = 2.0 + 5.0*(getMinReading('F').second - r_distance_d)/(150.0 - r_distance_d);
-   v_l_def = 2.0 + 5.0*(getMinReading('F').second - r_distance_d)/(150.0 - r_distance_d);
+
 
    // distance error component
    distance_error = r_distance_d - min.distance;
-
-   if(distance_error > 0.0){
-      v_r_dis = 0.1*abs(distance_error);
-      v_l_dis = -0.1*abs(distance_error);
-   }
-   else{
-      v_r_dis = -0.1*abs(distance_error);
-      v_l_dis = 0.1*abs(distance_error);
-   }
-
+   w_dis = 0.01*distance_error;
 
    // orientation error component
    orientation_error = (r_orientation_d - min.angle).SignedNormalize().GetValue();
+   //if(orientation_error <= CRadians::PI.GetValue())
+   w_ori = -orientation_error;
 
-   if(orientation_error <= CRadians::PI.GetValue()){
-      if(orientation_error > 0.0){
-         //std::cout << "R: " << orie_error << std::endl;
-         v_r_ori = -2*abs(orientation_error);
-         v_l_ori = 2*abs(orientation_error);
-      }
-      else{
-         //std::cout << "L: " << orie_error << std::endl;
-         v_r_ori = 2*abs(orientation_error);
-         v_l_ori = -2*abs(orientation_error);
-      }
-   }
+   // angular speed
+   w = Min(0.2, w_dis + w_ori);
 
-   v_r = v_r_def + v_r_dis + v_r_ori;
-   v_l = v_l_def + v_l_dis + v_l_ori;
+   // linear speed
+   v = 2.0 + 5.0*(getMinReading('F').second - r_distance_d)/(150.0 - r_distance_d);
 
 
-   return {v_l, v_r};
+   return {v - w*L/2, v + w*L/2};
 
 }
 
@@ -327,17 +310,13 @@ std::array<Real,2> CFootBotWall::UnstructuredExploration(
    Real v_l, v_r;
    CVector2 cAccumulator;
 
-   for(int i = 0; i < proximity_readings.size(); ++i) {
+   for(int i = 0; i < proximity_readings.size(); ++i) 
       cAccumulator += CVector2(proximity_readings[i].Value, proximity_readings[i].Angle);
-   }
+   
    cAccumulator /= proximity_readings.size();
-   /* If the angle of the vector is small enough and the closest obstacle
-    * is far enough, continue going straight, otherwise curve a little
-    */
-   CRadians cAngle = cAccumulator.Angle();
-   Real cLength = cAccumulator.Length();
+   
 
-   if (cLength == 0.0){
+   if (cAccumulator.Length() == 0.0){
       if(tic % 30 == 0 || chosen){
          
          if (!chosen){
@@ -377,8 +356,8 @@ std::array<Real,2> CFootBotWall::UnstructuredExploration(
       }
    }
    else{
-      if(m_cGoStraightAngleRange.WithinMinBoundIncludedMaxBoundIncluded(cAngle)) {
-         if(cAngle.GetValue() > 0.0f) {
+      if(m_cGoStraightAngleRange.WithinMinBoundIncludedMaxBoundIncluded(cAccumulator.Angle())) {
+         if(cAccumulator.Angle().GetValue() > 0.0f) {
             v_l = 2.0;
             v_r = 0.0;
          }
@@ -428,7 +407,7 @@ void CFootBotWall::ControlStep() {
       world_model_long[angle] = {angle, mod_distance, tic, false};
    }
 
-   // filtering the occluded rays
+   // individuazione dei raggi occlusi da altri robot 
    for (auto rr : rab_readings){
       if(rr.Range < 150.0f){
          rab_xy.FromPolarCoordinates(rr.Range, rr.HorizontalBearing);
@@ -489,7 +468,7 @@ void CFootBotWall::ControlStep() {
 
 
    // compute the inputs
-   auto input = StructuredExploration(35.0, -CRadians::PI_OVER_TWO, rab_readings); //UnstructuredExploration(proximity_readings);
+   auto input = StructuredExploration(35.0, -CRadians::PI_OVER_TWO, rab_readings);
 
    // Real INTERWHEEL_DISTANCE = 0.14f*100;
 
@@ -523,7 +502,7 @@ void CFootBotWall::ControlStep() {
       std::cout << "DUMPED\n";
       
       std::ofstream file;
-      file.open("template.csv", std::ios_base::app);
+      file.open("test_unstructured_1.csv", std::ios_base::app);
       for(auto step : dataset_step_data){
 
          if (step.long_readings.size() == 120 && step.short_readings.size() == 120){

@@ -6,6 +6,8 @@ from pprint import pprint
 from scipy.spatial import ConvexHull
 import csv
 
+import pickle
+
 PI = 3.14159265358979323846264338327950288
 
 map_ground_truth = {'I':{'bb':[[(-0.75,3.5),(0.75,2.0)]],'color':(255,0,0,255)},
@@ -293,33 +295,21 @@ class DiscreteFilter:
 
 class GaussianFilter:
 	
-	def __init__(self, feature_type, template_dataset):
+	def __init__(self, feature_type, template_dataset=None):
 		self.state_dim = 4
 		self.classifier = Classifier()
 		self.feature_type = feature_type
-
-		self.templates = {}
-		for step in template_dataset:
-			z = self.classifier.preProcess(step['world_model_long'], 3)
-			if step['true_class'] not in self.templates:
-				self.templates[step['true_class']] = [z]
-			else:
-				self.templates[step['true_class']].append(z)
-
-		self.template = {}
-		angles = list(z.keys())
 		
-		for true_class, readings in self.templates.items():
-			avg = [0.0]*120
-			n = len(readings)
-			for r in readings:
-				for i, distance in enumerate(r.values()):
-					avg[i] += distance
+		if self.feature_type != "geometric":
+			assert template_dataset != None
 
-			for i in range(len(avg)):
-				avg[i] /= n
-
-			self.template[true_class] = {angle:avg for angle,avg in zip(angles,avg)}
+			self.templates = {}
+			for step in template_dataset:
+				z = self.classifier.preProcess(step['world_model_long'], 3)
+				if step['true_class'] not in self.templates:
+					self.templates[step['true_class']] = [z]
+				else:
+					self.templates[step['true_class']].append(z)
 
 
 
@@ -340,17 +330,23 @@ class GaussianFilter:
 		self.transition_model = joint/np.sum(joint, axis=0)
 
 
-	def estimateObservationModel(self, dataset):
+	def estimateObservationModel(self, dataset="load"):
 		self.parameters = {}
 
-		X,y = [],[]
-		for step in dataset:
-			z = self.classifier.preProcess(step['world_model_long'],3)
-			X.append(self.extractFeature(z))
-			y.append(self.classifier.classlbl_to_id[step['true_class']])
+		if dataset == "load":
+			clf = pickle.load(open("observation_model_template.pickle",'rb'))
+		else:
+			X,y = [],[]
+			for i,step in enumerate(dataset):
+				#print(i)
+				z = self.classifier.preProcess(step['world_model_long'],3)
+				X.append(self.extractFeature(z))
+				y.append(self.classifier.classlbl_to_id[step['true_class']])
 
-		clf = LinearDiscriminantAnalysis(store_covariance=True)
-		clf.fit(X, y)
+			clf = LinearDiscriminantAnalysis(store_covariance=True)
+			clf.fit(X, y)
+
+			#pickle.dump(clf, open("observation_model_template.pickle",'wb'))
 
 		for i in range(clf.means_.shape[0]):
 			self.parameters[self.classifier.id_to_classlbl[i]] = {'mu':clf.means_[i,:].reshape((-1,1)), 'sigma':np.linalg.inv(clf.covariance_)}
@@ -416,19 +412,23 @@ class GaussianFilter:
 			for i in range(120):
 				s = 0
 				for v1,v2 in zip(value1,value2):
-					s += (v1-v2)**2
+					s += v1*v1 - 2*v1*v2 + v2*v2
 				distance_values.append(s)
 
 				value2.insert(0, value2[-1])
 				value2.pop()
 
-			return min(distance_values)
+			return min(distance_values)/(120*150**2)
 
 
 		feature = []
+		for classlbl,templates_readings in self.templates.items():
+			avg_min_distance = []
+			for template_reading in templates_readings:
+				avg_min_distance.append(minDistance(list(template_reading.values()), list(measurement.values())))
 
-		for classlbl,readings in self.template.items():
-			feature.append(minDistance(list(readings.values()), list(measurement.values())))
+			avg_min_distance = sum(avg_min_distance)/len(avg_min_distance)
+			feature.append(avg_min_distance)
 
 		return feature
 
@@ -462,10 +462,18 @@ class GaussianFilter:
 
 
 if __name__ == '__main__':
+	from pprint import pprint
+	
+	template_dataset = loadDataset('template.csv')
+	train_unstructured = loadDataset("train_unstructured.csv")
+	gaussian_filter = GaussianFilter('template', template_dataset)
 
-	dataset = loadDataset('template.csv')
+	z = gaussian_filter.classifier.preProcess(train_unstructured[0]['world_model_long'], 3)
+	feature = gaussian_filter.extractFeatureTemplate(z)
 
-	gaussian_filter = GaussianFilter('template', dataset)
+	#pickle.dump(feature, open("f.pickle", 'wb'))
+	f = pickle.load(open("f.pickle", 'rb'))
 
+	print(f)
 	
 

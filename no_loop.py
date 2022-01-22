@@ -142,19 +142,24 @@ if __name__ == '__main__':
 	#Gaussian filter----------------------------------------------
 	
 	train_structured = loadDataset("train_structured.csv")
-	train_unstructured = loadDataset("train_unstructured.csv")
+	#train_unstructured = loadDataset("train_unstructured.csv")
 	template_dataset = loadDataset("template.csv")
-	test_dataset = loadDataset("test_structured_multi_40.csv")
+	test_dataset = loadDataset("test_unstructured_40.csv")
 	
 	print("train_structured: ", len(train_structured))
-	print("train_unstructured: ", len(train_unstructured))
+	#print("train_unstructured: ", len(train_unstructured))
 	print("template_dataset: ", len(template_dataset))
 	print("test_dataset: ", len(test_dataset))
 
 	classifier = Classifier()
 	gaussian_filter = GaussianFilter("template", template_dataset)
+	print("Start train transition")
 	gaussian_filter.estimateTransitionModel(train_structured)
-	gaussian_filter.estimateObservationModel(train_unstructured)
+	print("End train transition")
+
+	print("Start train estimation")
+	gaussian_filter.estimateObservationModel(dataset="load")
+	print("End train estimationS")
 	
 	pprint(gaussian_filter.transition_model)
 	print("Parameters: ", gaussian_filter.parameters)
@@ -163,8 +168,9 @@ if __name__ == '__main__':
 	belief = [0.0, 0.0, 1.0, 0.0] # parte in V [I C V G]
 
 	y_pred,x_pred,y_true = [],[],[]
-	for step in test_dataset:
+	for i,step in enumerate(test_dataset):
 		if step['clock']%10 == 0:
+			print(i)
 			x = [step['x']*50, step['y']*50]
 			x_pred.append(x)
 			y_true.append(step['true_class'])

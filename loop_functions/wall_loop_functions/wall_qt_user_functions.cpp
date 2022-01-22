@@ -38,16 +38,16 @@ void CWALLQTUserFunctions::Draw(CFootBotEntity& c_entity) {
       // }
       
 
-      for (auto r : controller.sectorLbl_to_sectorData['R'].readings){
-         CVector2 end = CVector2(r.distance, r.angle);
-         CRay3 ray = CRay3(CVector3(0.0, 0.0, 0.01) ,CVector3(end.GetX()*0.01, (end.GetY())*0.01, 0.01));
-         if(r.occluded)
-            DrawRay(ray, CColor::BLUE, 2.0f);
-         else
-            DrawRay(ray);
-         DrawText(CVector3(end.GetX()*0.01, (end.GetY())*0.01, 0.01), std::to_string(r.age));
+      // for (auto r : controller.sectorLbl_to_sectorData['R'].readings){
+      //    CVector2 end = CVector2(r.distance, r.angle);
+      //    CRay3 ray = CRay3(CVector3(0.0, 0.0, 0.01) ,CVector3(end.GetX()*0.01, (end.GetY())*0.01, 0.01));
+      //    if(r.occluded)
+      //       DrawRay(ray, CColor::BLUE, 2.0f);
+      //    else
+      //       DrawRay(ray);
+      //    DrawText(CVector3(end.GetX()*0.01, (end.GetY())*0.01, 0.01), std::to_string(r.age));
 
-      }
+      // }
    }
 }
 

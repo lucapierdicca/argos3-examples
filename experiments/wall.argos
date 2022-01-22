@@ -122,7 +122,7 @@
     </distribute> -->
 
 
-<!--     <distribute>
+    <distribute>
       <position method="uniform" min="-0.5,-2,0" max="0.5,8,0" />
       <orientation method="gaussian" mean="122,0,0" std_dev="360,0,0" />
       <entity quantity="20" max_trials="100" base_num="0">
@@ -130,7 +130,7 @@
           <controller config="fwc" />
         </foot-bot>
       </entity>
-    </distribute> -->
+    </distribute>
 
 
 <!--     <distribute>
@@ -144,10 +144,10 @@
     </distribute> -->
 
 
-    <foot-bot id="fb_0">
+<!--     <foot-bot id="fb_0">
       <body position="0,0,0" orientation="90,0,0" />
       <controller config="fwc"/>
-    </foot-bot>
+    </foot-bot> -->
 
    
     <!-- Obstacles -->
