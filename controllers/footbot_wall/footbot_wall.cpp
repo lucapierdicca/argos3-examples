@@ -314,6 +314,15 @@ std::array<Real,2> CFootBotWall::WallFollowing(Real r_distance_d, const CCI_Rang
    v_l = v_l_def + v_l_dis + v_l_ori;
 
  
+   // if(GetId() != "fb_0"){
+   //    v_r = 7.0;
+   //    v_l = 7.0;
+   // }
+   // else{
+   //    v_r = -2.0;
+   //    v_l = 2.0;
+   // }
+
    return {v_l, v_r};
 
 }
@@ -397,6 +406,8 @@ std::array<Real,2> CFootBotWall::Diffusion(){
 }
 
 
+
+
 void CFootBotWall::ControlStep() {
 
    //std::cout << "STEP" << "\n";
@@ -430,6 +441,12 @@ void CFootBotWall::ControlStep() {
       world_model_long[angle] = {angle, mod_distance, tic, false};
    }
 
+   
+   if(GetId() == "fb_13")
+      for (auto rr : rab_readings)
+         std::cout << rr.HorizontalBearing << "-" << rr.Range << "\n";
+
+
    for (auto rr : rab_readings){
       if(rr.Range < 150.0f){
          rab_xy.FromPolarCoordinates(rr.Range, rr.HorizontalBearing);
@@ -439,7 +456,7 @@ void CFootBotWall::ControlStep() {
          start = (rab_xy + shift_xy).Angle();
          end = rab_xy.Angle() + (rab_xy.Angle() - start);
 
-         for (const auto& [angle, distance] : long_readings){
+         for (const auto& [angle, data] : world_model_long){
             if ((angle <= start && angle >= end))
                world_model_long[angle].occluded = true;
                        
@@ -554,7 +571,7 @@ void CFootBotWall::ControlStep() {
 
             row += "\n";
 
-            file << row;
+            //file << row;
          }
       }
 

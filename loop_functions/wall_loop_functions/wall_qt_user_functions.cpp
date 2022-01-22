@@ -28,7 +28,7 @@ void CWALLQTUserFunctions::Draw(CFootBotEntity& c_entity) {
    DrawRay(ray, CColor::BLACK, 2.0f);
 
 
-   if(controller.GetId() == "fb_0"){
+   if(controller.GetId() == "fb_13"){
    
       // for (auto p : controller.pr){
       //    CVector2 end = CVector2(p.distance, p.angle);
@@ -38,36 +38,19 @@ void CWALLQTUserFunctions::Draw(CFootBotEntity& c_entity) {
       // }
       
 
-      // for (auto r : controller.sectorLbl_to_sectorData['R'].readings){
-      //    CVector2 end = CVector2(r.distance, r.angle);
-      //    CRay3 ray = CRay3(CVector3(0.0, 0.0, 0.01) ,CVector3(end.GetX()*0.01, (end.GetY())*0.01, 0.01));
-      //    if(r.occluded)
-      //       DrawRay(ray, CColor::BLUE, 2.0f);
-      //    else
-      //       DrawRay(ray);
-      //    DrawText(CVector3(end.GetX()*0.01, (end.GetY())*0.01, 0.01), std::to_string(r.age));
+      for (auto r : controller.sectorLbl_to_sectorData['R'].readings){
+         CVector2 end = CVector2(r.distance, r.angle);
+         CRay3 ray = CRay3(CVector3(0.0, 0.0, 0.01) ,CVector3(end.GetX()*0.01, (end.GetY())*0.01, 0.01));
+         if(r.occluded)
+            DrawRay(ray, CColor::BLUE, 2.0f);
+         else
+            DrawRay(ray);
+         DrawText(CVector3(end.GetX()*0.01, (end.GetY())*0.01, 0.01), std::to_string(r.age));
 
-      // }
+      }
 
       
 
-      // for (auto mina : controller.lmr_old_copy){
-      //    CVector2 end = CVector2(mina.distance, mina.angle);
-      //    CRay3 ray = CRay3(CVector3(0.0, 0.0, 0.02),CVector3(end.GetX()*0.01, end.GetY()*0.01, 0.02));
-      //    DrawRay(ray, CColor::BLUE, 2.0f);
-      // }
-
-      // for (auto min : controller.lmr_new){
-      //    CVector2 end = CVector2(min.distance, min.angle);
-      //    CRay3 ray = CRay3(CVector3(0.0, 0.0, 0.02),CVector3(end.GetX()*0.01, end.GetY()*0.01, 0.02));
-      //    DrawRay(ray, CColor::BLACK, 2.0f);
-      // }
-
-      // for (auto max : controller.lMr){
-      //    CVector2 end = CVector2(max.distance, max.angle);
-      //    CRay3 ray = CRay3(CVector3(0.0, 0.0, 0.02),CVector3(end.GetX()*0.01, end.GetY()*0.01, 0.02));
-      //    DrawRay(ray, CColor::BLUE, 2.0f);
-      // }
 
    }
 
