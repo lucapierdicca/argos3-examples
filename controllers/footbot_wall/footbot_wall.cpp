@@ -257,9 +257,12 @@ char CFootBotWall::predict(std::array<int,4> feature){
 }
 
 
-std::array<Real,2> CFootBotWall::WallFollowing(Real r_distance_d, const CCI_RangeAndBearingSensor::TReadings& rab_readings){
+std::array<Real,2> CFootBotWall::StructuredExploration(
+   Real r_distance_d,
+   CRadians r_orientation_d,
+   const CCI_RangeAndBearingSensor::TReadings& rab_readings){
+   
    Real v_l, v_r, v_l_def, v_r_def, v_l_dis, v_r_dis, v_l_ori, v_r_ori;
-   CRadians r_orientation_d = -CRadians::PI_OVER_TWO; // desired orientation wrt the wall [rad]
    Real distance_error, orientation_error;
 
 
@@ -273,9 +276,7 @@ std::array<Real,2> CFootBotWall::WallFollowing(Real r_distance_d, const CCI_Rang
       }
    }
 
-
    free_min = min;
-   
       
    // default component
    v_r_def = 2.0 + 5.0*(getMinReading('F').second - r_distance_d)/(150.0 - r_distance_d);
@@ -313,31 +314,23 @@ std::array<Real,2> CFootBotWall::WallFollowing(Real r_distance_d, const CCI_Rang
    v_r = v_r_def + v_r_dis + v_r_ori;
    v_l = v_l_def + v_l_dis + v_l_ori;
 
- 
-   // if(GetId() != "fb_0"){
-   //    v_r = 7.0;
-   //    v_l = 7.0;
-   // }
-   // else{
-   //    v_r = -2.0;
-   //    v_l = 2.0;
-   // }
 
    return {v_l, v_r};
 
 }
 
 
-std::array<Real,2> CFootBotWall::Diffusion(){
+std::array<Real,2> CFootBotWall::UnstructuredExploration(
+   const CCI_FootBotProximitySensor::TReadings& proximity_readings){
 
    /* Sum them together */
    Real v_l, v_r;
    CVector2 cAccumulator;
 
-   for(size_t i = 0; i < world_model_proxy.size(); ++i) {
-      cAccumulator += CVector2(world_model_proxy[i].distance, world_model_proxy[i].angle);
+   for(int i = 0; i < proximity_readings.size(); ++i) {
+      cAccumulator += CVector2(proximity_readings[i].Value, proximity_readings[i].Angle);
    }
-   cAccumulator /= world_model_proxy.size();
+   cAccumulator /= proximity_readings.size();
    /* If the angle of the vector is small enough and the closest obstacle
     * is far enough, continue going straight, otherwise curve a little
     */
@@ -407,31 +400,25 @@ std::array<Real,2> CFootBotWall::Diffusion(){
 
 
 
-
 void CFootBotWall::ControlStep() {
-
-   //std::cout << "STEP" << "\n";
 
    // reset sectors_data (for the next control step)
    for (const auto& [sectorLbl, sectorData] : sectorLbl_to_sectorData)
       sectorLbl_to_sectorData[sectorLbl].readings.clear();
-   world_model_proxy.clear();
-
    pr.clear();
    
-
    // get the current step readings
    const CCI_FootBotDistanceScannerSensor::TReadingsMap& long_readings = m_pcDistanceS->GetLongReadingsMap();
    const CCI_FootBotDistanceScannerSensor::TReadingsMap& short_readings = m_pcDistanceS->GetShortReadingsMap();
    const CCI_RangeAndBearingSensor::TReadings& rab_readings = m_pcRangeAndBearingS->GetReadings();
    const CCI_PositioningSensor::SReading& robot_state = m_pcPositioning->GetReading();
-   const CCI_FootBotProximitySensor::TReadings& tProxReads = m_pcProximity->GetReadings();
+   const CCI_FootBotProximitySensor::TReadings& proximity_readings = m_pcProximity->GetReadings();
 
    
    // add the current step readings in the map world_model_long (it starts empty then it grows then it stops)
    Real mod_distance;
    CVector2 rab_xy, shift_xy;
-   CRadians start, end;
+   CRadians start, end, delta;
    Real fb_radius = 12.0f;
    for (const auto& [angle, distance] : long_readings){
       mod_distance = distance;
@@ -441,26 +428,19 @@ void CFootBotWall::ControlStep() {
       world_model_long[angle] = {angle, mod_distance, tic, false};
    }
 
-   
-   if(GetId() == "fb_13")
-      for (auto rr : rab_readings)
-         std::cout << rr.HorizontalBearing << "-" << rr.Range << "\n";
-
-
+   // filtering the occluded rays
    for (auto rr : rab_readings){
       if(rr.Range < 150.0f){
          rab_xy.FromPolarCoordinates(rr.Range, rr.HorizontalBearing);
          shift_xy.Set(rab_xy.GetX(), rab_xy.GetY());
          shift_xy = fb_radius * (shift_xy.Normalize().Perpendicularize());
 
-         start = (rab_xy + shift_xy).Angle();
-         end = rab_xy.Angle() + (rab_xy.Angle() - start);
+         delta = (rab_xy + shift_xy).Angle() - rab_xy.Angle(); 
 
-         for (const auto& [angle, data] : world_model_long){
-            if ((angle <= start && angle >= end))
+         for (const auto& [angle, data] : world_model_long)
+            if ((angle - rab_xy.Angle()).SignedNormalize().GetAbsoluteValue() <= delta.SignedNormalize().GetAbsoluteValue())
                world_model_long[angle].occluded = true;
-                       
-         }
+         
       }
    }
 
@@ -470,10 +450,6 @@ void CFootBotWall::ControlStep() {
       if (mod_distance == -2) mod_distance = 30.0f;
 
       world_model_short[angle] = {angle,mod_distance,tic};
-   }
-
-   for (auto proxymity_read : tProxReads){
-      world_model_proxy.push_back({proxymity_read.Angle, proxymity_read.Value, 0});
    }
 
 
@@ -513,7 +489,7 @@ void CFootBotWall::ControlStep() {
 
 
    // compute the inputs
-   auto input = WallFollowing(35.0, rab_readings); //Diffusion();
+   auto input = StructuredExploration(35.0, -CRadians::PI_OVER_TWO, rab_readings); //UnstructuredExploration(proximity_readings);
 
    // Real INTERWHEEL_DISTANCE = 0.14f*100;
 
@@ -581,127 +557,6 @@ void CFootBotWall::ControlStep() {
    }
 
   
-
-
-   /*
-   std::cout << open_intervals.size() << "\n";
-
-      
-
-   Real distance_error, orientation_error;
-
-   if(open_intervals.size() > 1 && !chosen && sector_to_data['R'].angle <= -CRadians::PI_OVER_TWO){
-
-      // compute "corner orientation"
-      Real corner_distance = 155.0;
-      CRadians corner_orientation;
-      for (const auto& [angle, distance] : world_model_long)
-         if(angle > open_intervals[0][1] && angle < open_intervals[1][0])
-            if (distance <= corner_distance){
-               corner_distance = distance;
-               corner_orientation = angle;
-            }
-      
-
-      std::array<CRadians,2> possible_orientation = {open_intervals[0][0] + (open_intervals[0][1] - open_intervals[0][0]).SignedNormalize()/2.0,
-                                                     corner_orientation};
-
-
-      std::experimental::reseed();
-      int index = std::experimental::randint(0, 1);                  
-      chosen_direction = possible_orientation[index];
-
-      std::cout << possible_orientation[0] << " - " << possible_orientation[1] << std::endl; 
-
-      Real current_min = CRadians::TWO_PI.GetValue();
-      int current_min_index;
-      for(int i=0;i<possible_orientation.size();i++)
-         if(abs((-CRadians::PI_OVER_TWO-possible_orientation[i]).SignedNormalize().GetValue()) < current_min){
-            current_min_index = i;
-            current_min = abs((-CRadians::PI_OVER_TWO-possible_orientation[i]).SignedNormalize().GetValue());
-         }
-
-      if (index != current_min_index)
-         chosen = true;
-   }
-
-   if(chosen){
-
-      std::cout << "F COMMANDING\n";
-      
-      if(sector_to_data['R'].angle > -CRadians::PI_OVER_TWO) chosen = false;
-      
-
-      // default component
-      r_speed = 5.0;
-      l_speed = 5.0;
-
-      // orientation error component
-      orientation_error = (chosen_direction - sector_to_data['F'].angle).SignedNormalize().GetValue();
-      std::cout << "R_angle: " << sector_to_data['R'].angle << " - F_angle: " << sector_to_data['F'].angle << std::endl;
-
-      if(orientation_error > 0.0){
-         //std::cout << "R: " << orie_error << std::endl;
-         r_speed += abs(orientation_error);
-         l_speed += -1*abs(orientation_error);
-      }
-      else{
-         //std::cout << "L: " << orie_error << std::endl;
-         r_speed += -1*abs(orientation_error);
-         l_speed += abs(orientation_error);
-      }
-
-   }
-   else{
-
-      
-
-      std::cout << "R COMMANDING\n";
-
-      // default component
-      r_speed = 5.0;
-      l_speed = 5.0;
-
-
-      // distance error component
-      distance_error = r_distance_d - sector_to_data['R'].distance;
-
-      if(distance_error > 0.0){
-         r_speed += 0.1*abs(distance_error);
-         l_speed += -0.1*abs(distance_error);
-      }
-      else{
-         r_speed += -0.1*abs(distance_error);
-         l_speed += 0.1*abs(distance_error);
-      }
-
-
-      // orientation error component
-      orientation_error = (r_orientation_d - sector_to_data['R'].angle).SignedNormalize().GetValue();
-
-      if(orientation_error <= CRadians::PI.GetValue()){
-         if(orientation_error > 0.0){
-            //std::cout << "R: " << orie_error << std::endl;
-            r_speed += -5*abs(orientation_error);
-            l_speed += 5*abs(orientation_error);
-         }
-         else{
-            //std::cout << "L: " << orie_error << std::endl;
-            r_speed += 5*abs(orientation_error);
-            l_speed += -5*abs(orientation_error);
-         }
-      }
-   }
-
-
-   
-   std::cout << "distance_error: "<< distance_error << "\n ";
-   std::cout << "orientation_error: "<< orientation_error << "\n ";
-   std::cout << "l_speed: " << l_speed << " - r_speed: " << r_speed << "\n";
-   
-   m_pcWheels->SetLinearVelocity(l_speed, r_speed);
-
-   */
 
 }
 

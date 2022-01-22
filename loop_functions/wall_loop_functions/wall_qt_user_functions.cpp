@@ -48,13 +48,7 @@ void CWALLQTUserFunctions::Draw(CFootBotEntity& c_entity) {
          DrawText(CVector3(end.GetX()*0.01, (end.GetY())*0.01, 0.01), std::to_string(r.age));
 
       }
-
-      
-
-
    }
-
-
 }
 
 

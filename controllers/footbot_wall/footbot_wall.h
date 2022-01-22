@@ -1,23 +1,3 @@
-/*
- * AUTHOR: Carlo Pinciroli <cpinciro@ulb.ac.be>
- *
- * An example diffusion controller for the foot-bot.
- *
- * This controller makes the robots behave as gas particles. The robots
- * go straight until they get close enough to another robot, in which
- * case they turn, loosely simulating an elastic collision. The net effect
- * is that over time the robots diffuse in the environment.
- *
- * The controller uses the proximity sensor to detect obstacles and the
- * wheels to move the robot around.
- *
- * This controller is meant to be used with the XML files:
- *    experiments/diffusion_1.argos
- *    experiments/diffusion_10.argos
- */
-
-
-
 #ifndef FOOTBOT_WALL_H
 #define FOOTBOT_WALL_H
 
@@ -44,22 +24,11 @@
 
 #include <fstream>
 
-//#include <argos3/core/simulator/simulator.h>
 
-/*
- * All the ARGoS stuff in the 'argos' namespace.
- * With this statement, you save typing argos:: every time.
- */
 using namespace argos;
 
 
-
-/*
- * A controller is simply an implementation of the CCI_Controller class.
- */
 class CFootBotWall : public CCI_Controller {
-
-
 
 private:
 
@@ -70,8 +39,6 @@ private:
    CCI_FootBotProximitySensor* m_pcProximity;
    CCI_RangeAndBearingSensor* m_pcRangeAndBearingS;
    CCI_PositioningSensor* m_pcPositioning;
-
-
 
    CDegrees m_cAlpha;
    Real m_fDelta;
@@ -84,11 +51,6 @@ private:
    int choice;
    int counter = 0;
 
-
-   Real desired_orientation;
-   Real orientation_error;
-   
-   
 
 
 public:
@@ -104,10 +66,8 @@ public:
 
    std::map<CRadians, struct angle_data> world_model_short;
    std::map<CRadians, struct angle_data> world_model_long;
-   std::vector<struct angle_data> world_model_proxy;
 
-   std::vector<struct angle_data> lmr_old_copy;
-   std::vector<struct angle_data> lmr_old;
+
    std::vector<struct angle_data> lmr_new;
    std::vector<struct angle_data> lMr; 
    std::vector<struct angle_data> pr;
@@ -144,8 +104,14 @@ public:
    std::array<int,4> extractFeatures();
    Real EucDistance(std::array<int,4> u, std::array<int,4> v);
    char predict(std::array<int,4> features);
-   std::array<Real,2> WallFollowing(Real r_distance_d, const CCI_RangeAndBearingSensor::TReadings&  rab_readings);
-   std::array<Real,2> Diffusion();
+   
+   std::array<Real,2> StructuredExploration(
+      Real r_distance_d, 
+      CRadians r_orientation_d, 
+      const CCI_RangeAndBearingSensor::TReadings&  rab_readings);
+   
+   std::array<Real,2> UnstructuredExploration(
+      const CCI_FootBotProximitySensor::TReadings& proximity_readings);
 
    /* Class constructor. */
    CFootBotWall();
