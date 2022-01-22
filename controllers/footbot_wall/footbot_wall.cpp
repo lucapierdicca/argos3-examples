@@ -262,8 +262,10 @@ std::array<Real,2> CFootBotWall::StructuredExploration(
    CRadians r_orientation_d,
    const CCI_RangeAndBearingSensor::TReadings& rab_readings){
    
-   Real v_l, v_r, v_l_def, v_r_def, v_l_dis, v_r_dis, v_l_ori, v_r_ori;
+   
+   Real v, w, w_dis, w_ori;
    Real distance_error, orientation_error;
+   Real L = 14.0;
 
 
    struct angle_data min = {CRadians::ZERO, 150.0, 0, false};
@@ -278,44 +280,28 @@ std::array<Real,2> CFootBotWall::StructuredExploration(
 
    free_min = min;
       
-   // default component
-   v_r_def = 2.0 + 5.0*(getMinReading('F').second - r_distance_d)/(150.0 - r_distance_d);
-   v_l_def = 2.0 + 5.0*(getMinReading('F').second - r_distance_d)/(150.0 - r_distance_d);
+
 
    // distance error component
    distance_error = r_distance_d - min.distance;
-
-   if(distance_error > 0.0){
-      v_r_dis = 0.1*abs(distance_error);
-      v_l_dis = -0.1*abs(distance_error);
-   }
-   else{
-      v_r_dis = -0.1*abs(distance_error);
-      v_l_dis = 0.1*abs(distance_error);
-   }
-
+   w_dis = 0.01*distance_error;
 
    // orientation error component
    orientation_error = (r_orientation_d - min.angle).SignedNormalize().GetValue();
+   //if(orientation_error <= CRadians::PI.GetValue())
+   w_ori = -orientation_error;
 
-   if(orientation_error <= CRadians::PI.GetValue()){
-      if(orientation_error > 0.0){
-         //std::cout << "R: " << orie_error << std::endl;
-         v_r_ori = -2*abs(orientation_error);
-         v_l_ori = 2*abs(orientation_error);
-      }
-      else{
-         //std::cout << "L: " << orie_error << std::endl;
-         v_r_ori = 2*abs(orientation_error);
-         v_l_ori = -2*abs(orientation_error);
-      }
-   }
+   // angular speed
+   w = Min(0.2, w_dis + w_ori);
 
-   v_r = v_r_def + v_r_dis + v_r_ori;
-   v_l = v_l_def + v_l_dis + v_l_ori;
+   // linear speed
+   v = 2.0 + 5.0*(getMinReading('F').second - r_distance_d)/(150.0 - r_distance_d);
+
+   std::cout << w_dis << " / " << w_ori << "\n"; 
+   std::cout << v << " / " << w << "\n";
 
 
-   return {v_l, v_r};
+   return {v - w*L/2, v + w*L/2};
 
 }
 
