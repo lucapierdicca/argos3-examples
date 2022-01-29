@@ -27,6 +27,9 @@ void CWALLQTUserFunctions::Draw(CFootBotEntity& c_entity) {
    CRay3 ray = CRay3(CVector3(0.0, 0.0, 0.01) ,CVector3(end.GetX()*0.01, (end.GetY())*0.01, 0.01));
    DrawRay(ray, CColor::BLACK, 2.0f);
 
+   ray = CRay3(CVector3(0.0, 0.0, 2.01) ,CVector3(controller.nearest_robot_xy.GetX()*0.01, (controller.nearest_robot_xy.GetY())*0.01, 2.01));
+   DrawRay(ray, CColor::RED, 2.0f);
+
 
    if(controller.GetId() == "fb_13"){
    

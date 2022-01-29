@@ -261,12 +261,13 @@ std::array<Real,2> CFootBotWall::StructuredExploration(
    Real r_distance_d,
    CRadians r_orientation_d,
    const CCI_RangeAndBearingSensor::TReadings& rab_readings){
+
+   Real v, w; // linear velocity (x_component) & angular velocity (z_component)
    
-   
-   Real v, w, w_dis, w_ori;
+   //Wall Following-----------------------------------------
+   Real v_wf, w_wf, w_dis, w_ori;
    Real distance_error, orientation_error;
    Real L = 14.0; // wheels distance [cm] 
-
 
    struct angle_data min = {CRadians::ZERO, 150.0, 0, false};
    for(auto r : sectorLbl_to_sectorData['R'].readings){
@@ -279,28 +280,54 @@ std::array<Real,2> CFootBotWall::StructuredExploration(
    }
 
    this->free_min = min;
+
+   // angular velocity wf proportional to distance error + orientation error
+   w_wf = 0.01*(r_distance_d - min.distance) + (-(r_orientation_d - min.angle).SignedNormalize().GetValue());
+
+   // linear velocity wf base + linearly ramping down to 0 component (Arrival)
+   v_wf = 2.0 + 5.0*(getMinReading('F').second - r_distance_d)/(150.0 - r_distance_d);
+
+
+   //Obstacle Avoidance--------------------------------------
+   Real center_center_distance = 17.0; //cm distanza tra i centri di due footbot attaccati
+   Real alpha_max = 30.0; //cm
+   Real w_oa;
+   CVector2 ahead = CVector2(1.0,0.0) * alpha_max;
+   CVector2 rab_xy, nearest_robot_xy;
+   std::vector<CCI_RangeAndBearingSensor::SPacket> in_rectangle_robots;
+
+   for(auto rr : rab_readings){
+      rab_xy.FromPolarCoordinates(rr.Range - center_center_distance, rr.HorizontalBearing);
+      if(rab_xy.GetX() > 0.0 and rab_xy.GetX() <= ahead.GetX() and abs(rab_xy.GetY()) <= center_center_distance/2){
+         in_rectangle_robots.push_back(rr);
+      }
       
+   }
+
+   Real nearest_robot_range = CVector2(ahead.GetX(), center_center_distance/2).Length();
+   CRadians nearest_robot_angle;
+   for(auto irr : in_rectangle_robots){
+      if(irr.Range <= nearest_robot_range){
+         nearest_robot_range = irr.Range;
+         nearest_robot_angle = irr.HorizontalBearing;
+      }
+   }
+
+   nearest_robot_xy.FromPolarCoordinates(nearest_robot_range - center_center_distance, nearest_robot_angle);
+   //this->nearest_robot_xy = nearest_robot_xy;
+
+   // angular velocity oa
+   w_oa = (ahead + CVector2(0.0, -nearest_robot_xy.GetY())).Angle().GetValue();
 
 
-   // distance error component
-   distance_error = r_distance_d - min.distance;
-   w_dis = 0.01*distance_error;
-
-   // orientation error component
-   orientation_error = (r_orientation_d - min.angle).SignedNormalize().GetValue();
-   //if(orientation_error <= CRadians::PI.GetValue())
-   w_ori = -orientation_error;
-
-   // angular speed
-   w = Min(0.2, w_dis + w_ori);
-
-   // linear speed
-   v = 2.0 + 5.0*(getMinReading('F').second - r_distance_d)/(150.0 - r_distance_d);
-
+   //Combination
+   v = v_wf;
+   w = w_wf;
 
    return {v - w*L/2, v + w*L/2};
 
 }
+
 
 
 std::array<Real,2> CFootBotWall::UnstructuredExploration(

@@ -72,6 +72,7 @@ public:
    std::vector<struct angle_data> lMr; 
    std::vector<struct angle_data> pr;
    struct angle_data free_min;
+   CVector2 nearest_robot_xy;
  
 
    struct step_data{
